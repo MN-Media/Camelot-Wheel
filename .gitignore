@@ -1,0 +1,12 @@
+# System
+.DS_Store
+Thumbs.db
+
+# Backup-Ordner nicht hochladen
+Backup/
+
+# Alte Datei (index.html ist die PWA-Version)
+camelot_wheel.html
+
+# Temp
+*.log

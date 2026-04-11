@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camelot Wheel Pro — DJ Harmonic Mixer</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#00c8ff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CamelotWhl">
+  <meta name="description" content="DJ Harmonic Mixing Tool — Camelot Wheel for key-compatible track selection">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- Apple Touch Icon -->
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #08080e;
+      --surface:  #0f0f1e;
+      --border:   #1c1c38;
+      --text:     #c8c8ee;
+      --muted:    #44446a;
+      --accent:   #00c8ff;
+
+      --perfect:  #00e87d;
+      --b1:       #ffd060;   /* boost lv1 — soft gold   */
+      --b2:       #ff9400;   /* boost lv2 — orange      */
+      --b3:       #ff3800;   /* boost lv3 — red-orange  */
+      --mood:     #d040b8;
+      --d1:       #88c4ff;   /* drop  lv1 — soft blue   */
+      --d2:       #4d8aff;   /* drop  lv2 — blue        */
+      --d3:       #1030ee;   /* drop  lv3 — deep blue   */
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px 50px;
+      gap: 18px;
+    }
+
+    /* ── Header ──────────────────────────────────────── */
+    header { text-align: center; }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-shadow: 0 0 28px rgba(0,200,255,.45);
+    }
+    .pro-tag {
+      color: #ffc840;
+      text-shadow: 0 0 22px rgba(255,200,60,.55);
+      letter-spacing: 5px;
+    }
+    body.light-mode .pro-tag {
+      color: #c08800;
+      text-shadow: 0 0 14px rgba(180,130,0,.3);
+    }
+    .subtitle {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-top: 5px;
+    }
+
+    /* ── Layout ──────────────────────────────────────── */
+    .layout {
+      display: flex;
+      gap: 22px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 880px;
+    }
+    canvas { cursor: pointer; flex-shrink: 0; display: block; }
+
+    /* ── Panel ───────────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 18px;
+      min-width: 230px;
+      flex: 1;
+    }
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 26px 0 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+      gap: 10px;
+    }
+    .empty-icon { font-size: 2rem; opacity: .3; }
+
+    .sel-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sel-code { font-size: 3rem; font-weight: 800; letter-spacing: 3px; line-height: 1; color: var(--perfect); text-shadow: 0 0 18px rgba(0,232,125,.4); }
+
+    /* Category rows */
+    .cat { margin-bottom: 12px; }
+    .cat-head {
+      font-size: 0.63rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .cat-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* Sub-level row inside a category */
+    .sublevel {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 5px;
+    }
+    .lv-tag {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      width: 22px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+      height: 38px;
+      padding: 0 8px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border: 1.5px solid;
+      transition: transform .12s, box-shadow .12s;
+      user-select: none;
+    }
+    .chip:hover { transform: scale(1.1); }
+    .chip:active { transform: scale(0.94); }
+
+    .chip.perfect  { color: var(--perfect); border-color: var(--perfect); background: rgba(0,232,125,.12); }
+    .chip.boost1   { color: var(--b1);      border-color: var(--b1);      background: rgba(255,208,96,.1); }
+    .chip.boost2   { color: var(--b2);      border-color: var(--b2);      background: rgba(255,148,0,.13); }
+    .chip.boost3   { color: var(--b3);      border-color: var(--b3);      background: rgba(255,56,0,.13);  }
+    .chip.mood     { color: var(--mood);    border-color: var(--mood);    background: rgba(208,64,184,.12); }
+    .chip.drop1    { color: var(--d1);      border-color: var(--d1);      background: rgba(136,196,255,.1); }
+    .chip.drop2    { color: var(--d2);      border-color: var(--d2);      background: rgba(77,138,255,.13); }
+    .chip.drop3    { color: var(--d3);      border-color: var(--d3);      background: rgba(16,48,238,.13); }
+
+    /* Legend */
+    .legend {
+      margin-top: 16px;
+      padding-top: 13px;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px 14px;
+    }
+    .leg-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.68rem;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      transition: opacity .15s;
+    }
+    .leg-item:hover { opacity: .72; }
+    .leg-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; transition: background .18s; }
+
+    /* Mini toggle pill on the right of each legend item */
+    .leg-mini-pill {
+      margin-left: auto;
+      width: 26px;
+      height: 14px;
+      border-radius: 7px;
+      border: 1px solid var(--tc, var(--muted));
+      position: relative;
+      flex-shrink: 0;
+      transition: border-color .18s;
+    }
+    .leg-mini-pill::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--tc, var(--muted));
+      box-shadow: 0 0 5px var(--tc, transparent);
+      transition: right .18s, left .18s, background .18s, box-shadow .18s;
+    }
+
+    /* Disabled legend item */
+    .leg-item.leg-off { color: rgba(255,255,255,.22); }
+    .leg-item.leg-off .leg-dot { background: #1e1e32 !important; }
+    .leg-item.leg-off .leg-mini-pill { border-color: #2a2a48; }
+    .leg-item.leg-off .leg-mini-pill::after {
+      right: auto;
+      left: 2px;
+      background: #2e2e4e;
+      box-shadow: none;
+    }
+
+    /* Disabled chips in the panel */
+    .chip.chip-off {
+      background: rgba(255,255,255,.03) !important;
+      border-color: rgba(255,255,255,.07) !important;
+      color: rgba(255,255,255,.18) !important;
+      box-shadow: none !important;
+      cursor: default;
+    }
+
+    /* Disabled sublevel row in panel */
+    .sublevel.sublevel-off {
+      opacity: 0.22;
+      pointer-events: none;
+    }
+
+    /* ── Light Mode ──────────────────────────────────── */
+    body.light-mode {
+      --bg:      #f0f0f8;
+      --surface: #ffffff;
+      --border:  #d0d0e8;
+      --text:    #1a1a3a;
+      --muted:   #8888b8;
+      --accent:  #0060c8;
+    }
+    body.light-mode h1 {
+      color: var(--accent);
+      text-shadow: 0 0 28px rgba(0,100,200,.3);
+    }
+    body.light-mode .subtitle { color: var(--muted); }
+    body.light-mode .qbtn.ql-dim {
+      background:   rgba(0,0,50,.04) !important;
+      border-color: rgba(0,0,50,.08) !important;
+      color:        rgba(0,0,50,.14) !important;
+    }
+
+    /* Theme button */
+    .theme-btn {
+      margin-left: auto;
+      background: #1a1a30;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      color: var(--muted);
+      width: 34px;
+      height: 24px;
+      padding: 0;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color .2s, color .2s, background .2s;
+      flex-shrink: 0;
+    }
+    .theme-btn:hover { color: var(--text); }
+    /* In light mode: restore the box */
+    body.light-mode .theme-btn {
+      background: var(--surface);
+      border-color: var(--border);
+    }
+    body.light-mode .theme-btn:hover { border-color: var(--accent); }
+
+    /* ── Tonarten Toggle ─────────────────────────────── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      width: 100%;
+      max-width: 880px;
+    }
+    .toggle-label { user-select: none; cursor: pointer; }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #1a1a30;
+      border: 1px solid #2a2a50;
+      border-radius: 12px;
+      transition: background .22s, border-color .22s;
+    }
+    .toggle-switch input:checked ~ .toggle-track {
+      background: rgba(0,232,125,.22);
+      border-color: var(--perfect);
+    }
+    .toggle-thumb {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 14px;
+      height: 14px;
+      background: #44446a;
+      border-radius: 50%;
+      transition: transform .22s, background .22s;
+      pointer-events: none;
+    }
+    .toggle-switch input:checked ~ .toggle-track .toggle-thumb {
+      transform: translateX(20px);
+      background: var(--perfect);
+      box-shadow: 0 0 7px rgba(0,232,125,.6);
+    }
+    .toggle-on-label {
+      color: var(--perfect);
+      font-size: 0.68rem;
+      text-shadow: 0 0 8px rgba(0,232,125,.4);
+      display: none;
+    }
+    #kn-toggle:checked ~ * ~ .toggle-on-label { display: inline; }
+    #kn-toggle:checked ~ * ~ .toggle-off-label { display: none; }
+    .toggle-off-label { display: inline; }
+
+    /* ── Quick Grid ──────────────────────────────────── */
+    .quick-wrap { width: 100%; max-width: 880px; }
+    .quick-label {
+      font-size: 0.63rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 9px;
+      text-align: center;
+    }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 5px;
+    }
+    .qkey { display: flex; flex-direction: column; gap: 4px; }
+    .pos-num { text-align: center; font-size: 0.58rem; color: var(--muted); padding-top: 1px; }
+
+    .qbtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 34px;
+      border-radius: 7px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: transform .1s, filter .1s, box-shadow .1s;
+      user-select: none;
+      letter-spacing: .5px;
+    }
+    .qbtn:hover { transform: scale(1.08); filter: brightness(1.35); }
+    .qbtn:active { transform: scale(0.93); }
+
+    /* Dim state — matches wheel "dim" segments */
+    .qbtn.ql-dim {
+      background:   rgba(255,255,255,.02) !important;
+      border-color: rgba(255,255,255,.05) !important;
+      color:        rgba(255,255,255,.14) !important;
+      box-shadow:   none !important;
+      filter: none !important;
+    }
+    .qbtn.ql-dim:hover { filter: brightness(1.5) !important; }
+
+    /* Active states */
+    .qbtn.q-sel     { background:var(--perfect) !important; border-color:#fff !important; color:#003a1a !important; box-shadow: 0 0 14px rgba(0,232,125,.6) !important; }
+    .qbtn.q-perfect { background:rgba(0,232,125,.25) !important; border-color:var(--perfect) !important; color:var(--perfect) !important; box-shadow:0 0 8px rgba(0,232,125,.35) !important; }
+    .qbtn.q-boost1  { background:rgba(255,208,96,.18) !important; border-color:var(--b1)      !important; color:var(--b1)      !important; box-shadow:0 0 6px rgba(255,208,96,.25) !important; }
+    .qbtn.q-boost2  { background:rgba(255,148,0,.22)  !important; border-color:var(--b2)      !important; color:var(--b2)      !important; box-shadow:0 0 8px rgba(255,148,0,.35) !important; }
+    .qbtn.q-boost3  { background:rgba(255,56,0,.22)   !important; border-color:var(--b3)      !important; color:var(--b3)      !important; box-shadow:0 0 8px rgba(255,56,0,.35)  !important; }
+    .qbtn.q-mood    { background:rgba(208,64,184,.22)  !important; border-color:var(--mood)    !important; color:var(--mood)    !important; box-shadow:0 0 8px rgba(208,64,184,.35) !important; }
+    .qbtn.q-drop1   { background:rgba(136,196,255,.18) !important; border-color:var(--d1)      !important; color:var(--d1)      !important; box-shadow:0 0 6px rgba(136,196,255,.25) !important; }
+    .qbtn.q-drop2   { background:rgba(77,138,255,.22)  !important; border-color:var(--d2)      !important; color:var(--d2)      !important; box-shadow:0 0 8px rgba(77,138,255,.35) !important; }
+    .qbtn.q-drop3   { background:rgba(16,48,238,.22)   !important; border-color:var(--d3)      !important; color:var(--d3)      !important; box-shadow:0 0 8px rgba(16,48,238,.35)  !important; }
+
+    /* ── Light-mode active Quick Select states ──────────── */
+    body.light-mode .qbtn.q-sel     { background: #00e87d !important; border-color: #000000 !important; color: #003a1a !important; box-shadow: 0 0 16px rgba(0,232,125,.55) !important; }
+    body.light-mode .qbtn.q-perfect { background: #00e87d !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+    body.light-mode .qbtn.q-boost1  { background: #ffd060 !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+    body.light-mode .qbtn.q-boost2  { background: #ff9400 !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+    body.light-mode .qbtn.q-boost3  { background: #ff4000 !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+    body.light-mode .qbtn.q-mood    { background: #d040b8 !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+    body.light-mode .qbtn.q-drop1   { background: #88c4ff !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+    body.light-mode .qbtn.q-drop2   { background: #4d8aff !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+    body.light-mode .qbtn.q-drop3   { background: #1030dc !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+
+    /* ── Light-mode disabled overrides ──────────────────── */
+    body.light-mode .leg-item.leg-off         { color: rgba(0,0,50,.30); }
+    body.light-mode .leg-item.leg-off .leg-dot{ background: #c8c8dc !important; }
+    body.light-mode .chip.chip-off {
+      background:   rgba(0,0,50,.05) !important;
+      border-color: rgba(0,0,50,.13) !important;
+      color:        rgba(0,0,50,.28) !important;
+    }
+    body.light-mode .sublevel.sublevel-off { opacity: 0.38; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ Camelot Wheel <span class="pro-tag">Pro</span></h1>
+  <p class="subtitle">Harmonic Mixing Tool — click on a key</p>
+</header>
+
+<div class="layout">
+  <canvas id="wheel" width="460" height="460"></canvas>
+  <div class="panel" id="panel"></div>
+</div>
+
+<div class="toggle-row">
+  <span class="toggle-label">Key Names</span>
+  <label class="toggle-switch" title="Show / hide key names">
+    <input type="checkbox" id="kn-toggle">
+    <div class="toggle-track"><div class="toggle-thumb"></div></div>
+  </label>
+  <span class="toggle-off-label">Off</span>
+  <span class="toggle-on-label">On</span>
+  <button class="theme-btn" id="theme-toggle" title="Light / Dark Mode">☀</button>
+</div>
+
+<div class="quick-wrap">
+  <div class="quick-label">Quick Select</div>
+  <div class="quick-grid" id="quickGrid"></div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ── Wrap helper ───────────────────────────────────────────────────────
+  // Wraps n into 1–12 (handles any integer, positive or negative)
+  function w(n) { return ((((n - 1) % 12) + 12) % 12) + 1; }
+
+  // ── Compatibility table (derived from Camelot Wheel mixing table) ─────
+  //
+  // A-ring formula (verified against table for 1A):
+  //   perfect  : [pos]A + [pos-1]B           → 1A: 1A, 12B ✓
+  //   boostLv1 : [pos]B + [pos+1]A           → 1A: 1B, 2A  ✓
+  //   boostLv2 : [pos-3]A                    → 1A: 10A      ✓
+  //   boostLv3 : [pos+2]A + [pos+7]A         → 1A: 3A, 8A  ✓
+  //   mood     : [pos+3]B (parallel major)   → 1A: 4B       ✓
+  //   dropLv1  : [pos-1]A                    → 1A: 12A
+  //   dropLv2  : [pos+3]A                    → 1A: 4A
+  //   dropLv3  : [pos-2]A + [pos-7]A         → 1A: 11A, 6A
+  //
+  // B-ring: mirrored (all +/- directions inverted, A↔B)
+
+  function getCompat(pos, letter) {
+    if (letter === 'A') {
+      return {
+        perfect  : [`${pos}A`,      `${w(pos-1)}B`],
+        boostLv1 : [`${pos}B`,      `${w(pos+1)}A`],
+        boostLv2 : [`${w(pos-3)}A`],
+        boostLv3 : [`${w(pos+2)}A`, `${w(pos+7)}A`],
+        mood     : [`${w(pos+3)}B`],
+        dropLv1  : [`${w(pos-1)}A`],
+        dropLv2  : [`${w(pos+3)}A`],
+        dropLv3  : [`${w(pos-2)}A`, `${w(pos-7)}A`],
+      };
+    } else {
+      return {
+        perfect  : [`${pos}B`,      `${w(pos+1)}A`],
+        boostLv1 : [`${w(pos+1)}B`],                          // only +1 same ring (Dur→Dur boost)
+        boostLv2 : [`${w(pos-3)}B`],
+        boostLv3 : [`${w(pos+2)}B`, `${w(pos+7)}B`],
+        mood     : [`${w(pos-3)}A`],
+        dropLv1  : [`${pos}A`,       `${w(pos-1)}B`],         // cross-ring (Dur→Moll) + backward B
+        dropLv2  : [`${w(pos+3)}B`],
+        dropLv3  : [`${w(pos-2)}B`,  `${w(pos-7)}B`],
+      };
+    }
+  }
+
+  // Returns the state name for a given code, given current selection + compat
+  // Priority: selected > perfect > boost1 > boost2 > boost3 > mood > drop1 > drop2 > drop3 > dim
+  function stateOf(code, sel, compat) {
+    if (!sel) return 'default';
+    if (code === sel) return 'selected';
+    const checks = [
+      ['perfect',  compat.perfect],
+      ['boostLv1', compat.boostLv1],
+      ['boostLv2', compat.boostLv2],
+      ['boostLv3', compat.boostLv3],
+      ['mood',     compat.mood],
+      ['dropLv1',  compat.dropLv1],
+      ['dropLv2',  compat.dropLv2],
+      ['dropLv3',  compat.dropLv3],
+    ];
+    for (const [state, arr] of checks) {
+      if (arr.includes(code)) {
+        return disabledCats.has(state) ? 'dim' : state;
+      }
+    }
+    return 'dim';
+  }
+
+  // ── Key name lookup (Camelot code → musical key) ─────────────────────
+  const KEY_NAMES = {
+    '1A':'Am',   '1B':'C Maj',
+    '2A':'Em',   '2B':'G Maj',
+    '3A':'Bm',   '3B':'D Maj',
+    '4A':'F#m',  '4B':'A Maj',
+    '5A':'C#m',  '5B':'E Maj',
+    '6A':'G#m',  '6B':'B Maj',
+    '7A':'Ebm',  '7B':'F# Maj',
+    '8A':'Bbm',  '8B':'Db Maj',
+    '9A':'Fm',   '9B':'Ab Maj',
+    '10A':'Cm',  '10B':'Eb Maj',
+    '11A':'Gm',  '11B':'Bb Maj',
+    '12A':'Dm',  '12B':'F Maj',
+  };
+
+  // ── Canvas setup ─────────────────────────────────────────────────────
+  const canvas = document.getElementById('wheel');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const CX = W / 2, CY = H / 2;
+  const R0 = 50, RA = 148, RB = 224;
+  const GAP  = 0.018;   // angular gap between segments (radians)
+  const RGAP = 2;       // radial gap between A ring and B ring (px each side)
+
+  let selected     = null;
+  let compat       = null;
+  let showKeyNames = false;
+  let lightMode    = false;   // dark mode by default
+  const disabledCats = new Set(['boostLv2', 'boostLv3', 'dropLv2', 'dropLv3']);  // default off
+
+  // Canvas angle for the CENTER of position pos (0=right, clockwise)
+  function midAngle(pos) { return (pos * 30 - 90) * Math.PI / 180; }
+
+  // Hue for each position
+  const posHue = pos => ((pos - 1) * 30 + 180) % 360;
+
+  // ── Segment fill/stroke colors per state ─────────────────────────────
+  function segStyle(state, hue) {
+    switch (state) {
+      case 'selected': return {
+        fill:   '#00e87d',
+        stroke: lightMode ? '#000000' : '#ffffff',
+        text:   '#003a1a',
+        glow:   lightMode ? '#00e87d' : '#00ff90',
+        glowBlur: lightMode ? 28 : 22
+      };
+      case 'perfect': return {
+        fill:   lightMode ? '#00e87d'  : 'rgba(0,232,125,.28)',
+        stroke: lightMode ? '#ffffff'  : '#00e87d',
+        text:   lightMode ? '#ffffff'  : '#00e87d',
+        glow:   lightMode ? null : '#00e87d', glowBlur: 14
+      };
+      case 'boostLv1': return {
+        fill:   lightMode ? '#ffd060'  : 'rgba(255,208,96,.2)',
+        stroke: lightMode ? '#ffffff'  : '#ffd060',
+        text:   lightMode ? '#ffffff'  : '#ffd060',
+        glow:   lightMode ? null : '#ffd060', glowBlur: 10
+      };
+      case 'boostLv2': return {
+        fill:   lightMode ? '#ff9400'  : 'rgba(255,148,0,.2)',
+        stroke: lightMode ? '#ffffff'  : '#ff9400',
+        text:   lightMode ? '#ffffff'  : '#ff9400',
+        glow:   lightMode ? null : '#ff9400', glowBlur: 11
+      };
+      case 'boostLv3': return {
+        fill:   lightMode ? '#ff4000'  : 'rgba(255,56,0,.22)',
+        stroke: lightMode ? '#ffffff'  : '#ff4000',
+        text:   lightMode ? '#ffffff'  : '#ff5520',
+        glow:   lightMode ? null : '#ff4000', glowBlur: 14
+      };
+      case 'mood': return {
+        fill:   lightMode ? '#d040b8'  : 'rgba(208,64,184,.2)',
+        stroke: lightMode ? '#ffffff'  : '#d040b8',
+        text:   lightMode ? '#ffffff'  : '#d040b8',
+        glow:   lightMode ? null : '#d040b8', glowBlur: 12
+      };
+      case 'dropLv1': return {
+        fill:   lightMode ? '#88c4ff'  : 'rgba(136,196,255,.2)',
+        stroke: lightMode ? '#ffffff'  : '#88c4ff',
+        text:   lightMode ? '#ffffff'  : '#88c4ff',
+        glow:   lightMode ? null : '#88c4ff', glowBlur: 10
+      };
+      case 'dropLv2': return {
+        fill:   lightMode ? '#4d8aff'  : 'rgba(77,138,255,.2)',
+        stroke: lightMode ? '#ffffff'  : '#4d8aff',
+        text:   lightMode ? '#ffffff'  : '#4d8aff',
+        glow:   lightMode ? null : '#4d8aff', glowBlur: 11
+      };
+      case 'dropLv3': return {
+        fill:   lightMode ? '#1030dc'  : 'rgba(20,48,220,.22)',
+        stroke: lightMode ? '#ffffff'  : '#1030dc',
+        text:   lightMode ? '#ffffff'  : '#2045ee',
+        glow:   lightMode ? null : '#1030dc', glowBlur: 14
+      };
+      case 'dim': return lightMode ? {
+        fill:   `hsl(${hue},10%,95%)`,
+        stroke: 'rgba(0,0,60,.18)', text: 'rgba(0,0,50,.28)', glow: null, glowBlur: 0
+      } : {
+        fill:   `hsl(${hue},7%,11%)`,
+        stroke: '#050508', text: 'rgba(255,255,255,.11)', glow: null, glowBlur: 0
+      };
+      default: return {
+        fill:   null,  // computed in drawSeg — see lightMode branch there
+        stroke: lightMode ? 'rgba(70,70,140,.45)'  : '#06060c',
+        text:   lightMode ? 'rgba(5,5,40,.90)'     : 'rgba(255,255,255,.88)',
+        glow: null, glowBlur: 0
+      };
+    }
+  }
+
+  function drawSeg(pos, isB, state) {
+    const r1  = isB ? RA + RGAP : R0;
+    const r2  = isB ? RB        : RA - RGAP;
+    const mid = midAngle(pos);
+    const sa  = mid - 15 * Math.PI / 180 + GAP;
+    const ea  = mid + 15 * Math.PI / 180 - GAP;
+    const hue = posHue(pos);
+    const s   = segStyle(state, hue);
+
+    const fill = s.fill ?? (isB
+      ? (lightMode ? `hsl(${hue},76%,58%)` : `hsl(${hue},62%,36%)`)
+      : (lightMode ? `hsl(${hue},66%,68%)` : `hsl(${hue},50%,28%)`));
+
+    if (s.glow) {
+      ctx.save();
+      ctx.shadowColor = s.glow;
+      ctx.shadowBlur  = s.glowBlur;
+    }
+
+    ctx.beginPath();
+    ctx.arc(CX, CY, r2, sa, ea);
+    ctx.arc(CX, CY, r1, ea, sa, true);
+    ctx.closePath();
+    ctx.fillStyle   = fill;
+    ctx.fill();
+    ctx.strokeStyle = s.stroke;
+    ctx.lineWidth   = s.glow ? (lightMode ? 2.2 : 2) : (lightMode ? 1.6 : 1.2);
+    ctx.stroke();
+
+    if (s.glow) ctx.restore();
+
+    // Label
+    const r  = (r1 + r2) / 2;
+    const tx = CX + Math.cos(mid) * r;
+    const ty = CY + Math.sin(mid) * r;
+    const code = `${pos}${isB ? 'B' : 'A'}`;
+    ctx.save();
+    ctx.fillStyle    = s.text;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    if (showKeyNames) {
+      const keyName = KEY_NAMES[code] || '';
+      const offset  = isB ? 6 : 7;
+      ctx.font = `bold ${isB ? 11 : 10}px 'Segoe UI', Arial, sans-serif`;
+      ctx.fillText(code, tx, ty - offset);
+      ctx.font = `${isB ? 9 : 8}px 'Segoe UI', Arial, sans-serif`;
+      ctx.fillStyle = state === 'selected' ? 'rgba(0,60,30,.85)' : s.text;
+      ctx.fillText(keyName, tx, ty + offset);
+    } else {
+      ctx.font = `bold ${isB ? 13 : 12}px 'Segoe UI', Arial, sans-serif`;
+      ctx.fillText(code, tx, ty);
+    }
+    ctx.restore();
+  }
+
+  function drawCenter() {
+    ctx.beginPath();
+    ctx.arc(CX, CY, R0 - 3, 0, Math.PI * 2);
+    ctx.fillStyle   = lightMode ? '#f8f8fc' : '#08080e';
+    ctx.fill();
+    ctx.strokeStyle = lightMode ? '#d0d0e8' : '#1c1c38';
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    if (selected) {
+      if (showKeyNames) {
+        ctx.fillStyle = lightMode ? '#1a1a3a' : '#ffffff';
+        ctx.font      = `bold 15px 'Segoe UI', Arial`;
+        ctx.fillText(selected, CX, CY - 9);
+        ctx.fillStyle = lightMode ? 'rgba(60,60,120,.55)' : 'rgba(200,200,238,.65)';
+        ctx.font      = `10px 'Segoe UI', Arial`;
+        ctx.fillText(KEY_NAMES[selected] || '', CX, CY + 9);
+      } else {
+        ctx.fillStyle = lightMode ? '#1a1a3a' : '#fff';
+        ctx.font      = `bold 20px 'Segoe UI', Arial`;
+        ctx.fillText(selected, CX, CY);
+      }
+    } else {
+      ctx.fillStyle = lightMode ? '#a0a0c0' : '#333355';
+      ctx.font      = `bold 9px 'Segoe UI', Arial`;
+      ctx.fillText('CAMELOT', CX, CY - 7);
+      ctx.fillText('WHEEL',   CX, CY + 7);
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (let pos = 1; pos <= 12; pos++) {
+      const cA = `${pos}A`, cB = `${pos}B`;
+      const sA = selected ? stateOf(cA, selected, compat) : 'default';
+      const sB = selected ? stateOf(cB, selected, compat) : 'default';
+      drawSeg(pos, false, sA);
+      drawSeg(pos, true,  sB);
+    }
+    drawCenter();
+  }
+
+  // ── Click handling ────────────────────────────────────────────────────
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx   = (e.clientX - rect.left) * (W / rect.width);
+    const my   = (e.clientY - rect.top)  * (H / rect.height);
+    const dx   = mx - CX, dy = my - CY;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < R0 || dist > RB) {
+      if (dist < R0) select(null);
+      return;
+    }
+
+    const isB   = dist >= RA;
+    const letter = isB ? 'B' : 'A';
+
+    let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    if (angle < 0) angle += 360;
+    const norm = (angle + 90) % 360;
+    let pos = Math.floor((norm + 15) / 30) % 12;
+    if (pos === 0) pos = 12;
+
+    const code = `${pos}${letter}`;
+    select(code === selected ? null : code);
+  });
+
+  function select(code) {
+    if (!code) {
+      selected = null;
+      compat   = null;
+    } else {
+      selected = code;
+      compat   = getCompat(parseInt(code), code.slice(-1));
+    }
+    draw();
+    updatePanel();
+    updateQuick();
+  }
+
+  // ── Panel ─────────────────────────────────────────────────────────────
+  const CAT_META = [
+    { key: 'perfect',  label: 'Perfect Match',  color: 'var(--perfect)' },
+    { key: 'mood',     label: 'Mood Change',     color: 'var(--mood)'    },
+    { key: 'boostLv1', label: 'Boost Lv1 (mild)',color: 'var(--b1)'      },
+    { key: 'dropLv1',  label: 'Drop Lv1 (mild)', color: 'var(--d1)'      },
+    { key: 'boostLv2', label: 'Boost Lv2',       color: 'var(--b2)'      },
+    { key: 'dropLv2',  label: 'Drop Lv2',        color: 'var(--d2)'      },
+    { key: 'boostLv3', label: 'Boost Lv3 (max)', color: 'var(--b3)'      },
+    { key: 'dropLv3',  label: 'Drop Lv3 (max)',  color: 'var(--d3)'      },
+  ];
+
+  function buildLegendHTML() {
+    const items = CAT_META.map(({ key, label, color }) => {
+      const off  = disabledCats.has(key);
+      const dotBg = off ? '#1e1e32' : color;
+      return `<div class="leg-item${off ? ' leg-off' : ''}" style="--tc:${color}"
+                   onclick="__cw.toggleCat('${key}')">
+        <div class="leg-dot" style="background:${dotBg}"></div>
+        ${label}
+        <div class="leg-mini-pill"></div>
+      </div>`;
+    }).join('');
+    return `<div class="legend">${items}</div>`;
+  }
+
+  function chipRow(codes, cls, off = false) {
+    return codes.map(k =>
+      `<div class="chip ${cls}${off ? ' chip-off' : ''}" ${off ? '' : `onclick="__cw.select('${k}')"`}>${k}</div>`
+    ).join('');
+  }
+
+  function levelRow(lvLabel, codes, cls, off = false) {
+    return `
+      <div class="sublevel${off ? ' sublevel-off' : ''}">
+        <span class="lv-tag">${lvLabel}</span>
+        <div class="chips">${chipRow(codes, cls, off)}</div>
+      </div>`;
+  }
+
+  function updatePanel() {
+    const panel = document.getElementById('panel');
+    if (!selected) {
+      panel.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🎛️</div>
+          <span>Click on a key<br>in the Wheel or Quick Select</span>
+        </div>
+        ${buildLegendHTML()}`;
+      return;
+    }
+
+    const pOff  = disabledCats.has('perfect');
+    const b1Off = disabledCats.has('boostLv1');
+    const b2Off = disabledCats.has('boostLv2');
+    const b3Off = disabledCats.has('boostLv3');
+    const mOff  = disabledCats.has('mood');
+    const d1Off = disabledCats.has('dropLv1');
+    const d2Off = disabledCats.has('dropLv2');
+    const d3Off = disabledCats.has('dropLv3');
+
+    panel.innerHTML = `
+      <div class="sel-header">
+        <div class="sel-code">${selected}</div>
+      </div>
+
+      <div class="cat">
+        <div class="cat-head" style="color:var(--perfect);${pOff ? 'opacity:.28;filter:grayscale(1)' : ''}">✓ Perfect Match</div>
+        <div class="sublevel${pOff ? ' sublevel-off' : ''}">
+          <span class="lv-tag"></span>
+          <div class="chips">${chipRow(compat.perfect, 'perfect', pOff)}</div>
+        </div>
+      </div>
+
+      <div class="cat">
+        <div class="cat-head" style="color:var(--b2)">↑ Energy Boost</div>
+        ${levelRow('Lv1', compat.boostLv1, 'boost1', b1Off)}
+        ${levelRow('Lv2', compat.boostLv2, 'boost2', b2Off)}
+        ${levelRow('Lv3', compat.boostLv3, 'boost3', b3Off)}
+      </div>
+
+      <div class="cat">
+        <div class="cat-head" style="color:var(--mood);${mOff ? 'opacity:.28;filter:grayscale(1)' : ''}">⇄ Mood Change</div>
+        <div class="sublevel${mOff ? ' sublevel-off' : ''}">
+          <span class="lv-tag"></span>
+          <div class="chips">${chipRow(compat.mood, 'mood', mOff)}</div>
+        </div>
+      </div>
+
+      <div class="cat">
+        <div class="cat-head" style="color:var(--d2)">↓ Energy Drop</div>
+        ${levelRow('Lv1', compat.dropLv1, 'drop1', d1Off)}
+        ${levelRow('Lv2', compat.dropLv2, 'drop2', d2Off)}
+        ${levelRow('Lv3', compat.dropLv3, 'drop3', d3Off)}
+      </div>
+
+      ${buildLegendHTML()}`;
+  }
+
+  // ── Quick grid ────────────────────────────────────────────────────────
+  function buildQuickGrid() {
+    const grid = document.getElementById('quickGrid');
+    let html = '';
+    for (let pos = 1; pos <= 12; pos++) {
+      const hue = posHue(pos);
+      // Match exactly the wheel segment fill colors
+      const bBg  = lightMode ? `hsl(${hue},76%,58%)` : `hsl(${hue},62%,36%)`;
+      const bBrd = lightMode ? `hsl(${hue},72%,42%)` : `hsl(${hue},65%,48%)`;
+      const bClr = lightMode ? `hsl(${hue},72%,13%)` : `hsl(${hue},80%,82%)`;
+      const aBg  = lightMode ? `hsl(${hue},66%,68%)` : `hsl(${hue},50%,28%)`;
+      const aBrd = lightMode ? `hsl(${hue},62%,50%)` : `hsl(${hue},52%,40%)`;
+      const aClr = lightMode ? `hsl(${hue},62%,15%)` : `hsl(${hue},70%,76%)`;
+      html += `<div class="qkey">
+        <div class="pos-num">${pos}</div>
+        <div class="qbtn" id="qb-${pos}B" onclick="__cw.select('${pos}B')"
+          style="background:${bBg}; border-color:${bBrd}; color:${bClr};">
+          ${pos}B</div>
+        <div class="qbtn" id="qb-${pos}A" onclick="__cw.select('${pos}A')"
+          style="background:${aBg}; border-color:${aBrd}; color:${aClr};">
+          ${pos}A</div>
+      </div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  const STATE_TO_QCLASS = {
+    perfect:  'q-perfect',
+    boostLv1: 'q-boost1', boostLv2: 'q-boost2', boostLv3: 'q-boost3',
+    mood:     'q-mood',
+    dropLv1:  'q-drop1',  dropLv2:  'q-drop2',  dropLv3:  'q-drop3',
+  };
+
+  function updateQuick() {
+    const allBtns = document.querySelectorAll('.qbtn');
+    allBtns.forEach(el => {
+      el.classList.remove('ql-dim', 'q-sel',
+        'q-perfect', 'q-boost1', 'q-boost2', 'q-boost3',
+        'q-mood',
+        'q-drop1', 'q-drop2', 'q-drop3');
+    });
+    if (!selected) return;
+
+    // Dim everything first
+    allBtns.forEach(el => el.classList.add('ql-dim'));
+
+    function mark(code, cls) {
+      const el = document.getElementById(`qb-${code}`);
+      if (el) { el.classList.remove('ql-dim'); el.classList.add(cls); }
+    }
+
+    function markCat(cat, codes, cls) {
+      if (!disabledCats.has(cat)) codes.forEach(c => { if (c !== selected) mark(c, cls); });
+    }
+
+    mark(selected, 'q-sel');
+    markCat('perfect',  compat.perfect,  'q-perfect');
+    markCat('boostLv1', compat.boostLv1, 'q-boost1');
+    markCat('boostLv2', compat.boostLv2, 'q-boost2');
+    markCat('boostLv3', compat.boostLv3, 'q-boost3');
+    markCat('mood',     compat.mood,     'q-mood');
+    markCat('dropLv1',  compat.dropLv1,  'q-drop1');
+    markCat('dropLv2',  compat.dropLv2,  'q-drop2');
+    markCat('dropLv3',  compat.dropLv3,  'q-drop3');
+  }
+
+  // ── Category toggle ───────────────────────────────────────────────────
+  function toggleCat(cat) {
+    if (disabledCats.has(cat)) disabledCats.delete(cat);
+    else disabledCats.add(cat);
+    draw();
+    updatePanel();
+    updateQuick();
+  }
+
+  // ── Theme toggle ──────────────────────────────────────────────────────
+  function toggleTheme() {
+    lightMode = !lightMode;
+    document.body.classList.toggle('light-mode', lightMode);
+    document.getElementById('theme-toggle').textContent = lightMode ? '🌙' : '☀';
+    buildQuickGrid();
+    draw();
+    updatePanel();
+    updateQuick();
+  }
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+  // ── Tonarten toggle ───────────────────────────────────────────────────
+  document.getElementById('kn-toggle').addEventListener('change', e => {
+    showKeyNames = e.target.checked;
+    draw();
+  });
+
+  // ── Global API ────────────────────────────────────────────────────────
+  window.__cw = { select, toggleCat };
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  buildQuickGrid();
+  draw();
+  updatePanel();
+
+})();
+</script>
+<footer style="
+  width: 100%;
+  text-align: center;
+  padding: 18px 0 10px;
+  font-size: 0.6rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.5;
+  user-select: none;
+">Design by Michael Neuner</footer>
+
+<script>
+  // ── Service Worker Registration ───────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('[CW] Service Worker registered:', reg.scope))
+        .catch(err => console.warn('[CW] Service Worker error:', err));
+    });
+  }
+</script>
+
+</body>
+</html>
