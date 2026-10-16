@@ -10,3 +10,8 @@ camelot_wheel.html
 
 # Temp
 *.log
+
+# Aufräumen 16.10.2026: Arbeitsdateien nicht veröffentlichen
+alt/
+README.md
+camelot_wheel_apple.html
