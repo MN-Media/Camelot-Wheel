@@ -1,7 +1,7 @@
 // Camelot Wheel Pro — Service Worker
 // Cache-first strategy for full offline support
 
-const CACHE_NAME = 'camelot-wheel-v1';
+const CACHE_NAME = 'camelot-wheel-v2';
 const ASSETS = [
   '/',
   '/index.html',

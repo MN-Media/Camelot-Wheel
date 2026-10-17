@@ -6,80 +6,169 @@
   <title>Camelot Wheel Pro — DJ Harmonic Mixer</title>
 
   <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#00c8ff">
+  <meta name="theme-color" content="#0071e3">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CamelotWhl">
   <meta name="description" content="DJ Harmonic Mixing Tool — Camelot Wheel for key-compatible track selection">
 
-  <!-- Web App Manifest -->
   <link rel="manifest" href="/manifest.json">
-
-  <!-- Apple Touch Icon -->
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg:       #08080e;
-      --surface:  #0f0f1e;
-      --border:   #1c1c38;
-      --text:     #c8c8ee;
-      --muted:    #44446a;
-      --accent:   #00c8ff;
+    html { -webkit-text-size-adjust: 100%; }
+    button, .qbtn, .chip, .leg-item, .cat-drop-row, .toggle-switch, .mode-kn-label, canvas {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
 
+    :root {
+      --bg:       #000000;
+      --surface:  #131316;
+      --border:   rgba(255,255,255,.10);
+      --text:     #f5f5f7;
+      --muted:    #a1a1a6;
+      --accent:   #2997ff;
+      --ease:     cubic-bezier(0.25, 0.1, 0.25, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
       --perfect:  #00e87d;
-      --b1:       #ffd060;   /* boost lv1 — soft gold   */
-      --b2:       #ff9400;   /* boost lv2 — orange      */
-      --b3:       #ff3800;   /* boost lv3 — red-orange  */
+      --b1:       #ffd060;
+      --b2:       #ff9400;
+      --b3:       #ff3800;
       --mood:     #d040b8;
-      --d1:       #88c4ff;   /* drop  lv1 — soft blue   */
-      --d2:       #4d8aff;   /* drop  lv2 — blue        */
-      --d3:       #1030ee;   /* drop  lv3 — deep blue   */
+      --d1:       #88c4ff;
+      --d2:       #4d8aff;
+      --d3:       #1030ee;
     }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px 16px 50px;
+      padding: 28px 16px 48px;
       gap: 18px;
     }
 
     /* ── Header ──────────────────────────────────────── */
     header { text-align: center; }
     h1 {
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      color: var(--accent);
-      text-shadow: 0 0 28px rgba(0,200,255,.45);
+      font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em;
+      color: var(--text);
     }
     .pro-tag {
-      color: #ffc840;
-      text-shadow: 0 0 22px rgba(255,200,60,.55);
-      letter-spacing: 5px;
+      background: linear-gradient(95deg, #ff9500, #ffcc33);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: #ffb300;
     }
     body.light-mode .pro-tag {
-      color: #c08800;
-      text-shadow: 0 0 14px rgba(180,130,0,.3);
+      background: linear-gradient(95deg, #d97d00, #e6a700);
+      -webkit-background-clip: text; background-clip: text;
     }
-    .subtitle {
-      font-size: 0.72rem;
-      color: var(--muted);
-      letter-spacing: 2px;
-      margin-top: 5px;
+    .subtitle { font-size: 0.85rem; color: var(--muted); letter-spacing: 0; margin-top: 6px; }
+
+    /* ══════════════════════════════════════════════════
+       CONTROLS ROW  (Mode-Bar + Settings-Bar)
+    ══════════════════════════════════════════════════ */
+    .controls-row {
+      display: flex; gap: 8px;
+      align-items: center; flex-wrap: wrap; justify-content: center;
     }
+
+    /* shared pill style */
+    .mode-bar, .settings-bar {
+      display: flex; gap: 4px; align-items: center;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 5px 6px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    .settings-bar { position: relative; }
+
+    /* ── Layout mode buttons ─────────────────────────── */
+    .mode-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 54px; height: 34px; border-radius: 11px;
+      border: 1px solid transparent; background: transparent;
+      color: var(--muted); cursor: pointer; padding: 0;
+      transition: background .18s, color .18s, border-color .18s; flex-shrink: 0;
+    }
+    .mode-btn svg { width: 36px; height: 22px; display: block; }
+    .mode-btn:hover  { color: var(--text); background: rgba(255,255,255,.05); }
+    .mode-btn.active { background: rgba(41,151,255,.12); border-color: rgba(41,151,255,.50); color: var(--accent); }
+
+    /* ── Settings-bar buttons (KN + sliders + theme) ─── */
+    .sbar-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 34px; border-radius: 11px;
+      border: 1px solid transparent; background: transparent;
+      color: var(--muted); cursor: pointer; padding: 0;
+      transition: background .18s, color .18s, border-color .18s; flex-shrink: 0;
+    }
+    .sbar-btn svg { width: 17px; height: 17px; display: block; }
+    .sbar-btn:hover  { color: var(--text); background: rgba(255,255,255,.05); }
+    .sbar-btn.sbar-active { background: rgba(41,151,255,.12); border-color: rgba(41,151,255,.50); color: var(--accent); }
+
+    /* shared separator */
+    .mode-sep {
+      width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0;
+    }
+
+    /* ── Categories dropdown ─────────────────────────── */
+    .cat-dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 10px;
+      width: 296px;
+      display: none; grid-template-columns: 1fr 1fr; gap: 2px 6px;
+      z-index: 200; box-shadow: 0 8px 32px rgba(0,0,0,.55);
+    }
+    .cat-dropdown.open { display: grid; }
+    .cat-drop-row {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 7px; border-radius: 7px;
+      cursor: pointer; user-select: none;
+      transition: background .14s, opacity .14s;
+    }
+    .cat-drop-row:hover { background: rgba(255,255,255,.06); }
+    .cat-drop-dot  { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .cat-drop-name { font-size: .68rem; flex: 1; color: var(--text); transition: color .14s; }
+    .cat-drop-pill {
+      width: 24px; height: 13px; border-radius: 6.5px; border: 1px solid;
+      position: relative; flex-shrink: 0; transition: border-color .18s;
+    }
+    .cat-drop-pill::after {
+      content: ''; position: absolute; top: 2px; right: 2px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor; box-shadow: 0 0 4px currentColor;
+      transition: right .18s, left .18s, opacity .18s;
+    }
+    .cat-drop-row.cat-off               { opacity: .42; }
+    .cat-drop-row.cat-off .cat-drop-name{ color: var(--muted); }
+    .cat-drop-row.cat-off .cat-drop-pill::after { right: auto; left: 2px; opacity: .3; box-shadow: none; }
+    .cat-drop-divider {
+      grid-column: 1 / -1;
+      height: 1px; background: var(--border); margin: 5px 0;
+    }
+    .cat-drop-full { grid-column: 1 / -1; }
+
+    /* light-mode overrides */
+    body.light-mode .mode-btn:hover     { background: rgba(0,0,80,.06); color: var(--text); }
+    body.light-mode .mode-btn.active    { background: rgba(0,113,227,.10); border-color: rgba(0,113,227,.45); color: var(--accent); }
+    body.light-mode .sbar-btn:hover     { background: rgba(0,0,80,.06); color: var(--text); }
+    body.light-mode .sbar-btn.sbar-active { background: rgba(0,113,227,.10); border-color: rgba(0,113,227,.45); color: var(--accent); }
+    body.light-mode .cat-dropdown       { box-shadow: 0 8px 24px rgba(0,0,100,.13); }
+    body.light-mode .cat-drop-row:hover { background: rgba(0,0,100,.04); }
+    body.light-mode .cat-drop-name      { color: var(--text); }
+    body.light-mode .mode-bar, body.light-mode .settings-bar { box-shadow: 0 10px 26px rgba(0,0,100,.05); }
+    body.light-mode .panel { box-shadow: 0 16px 44px rgba(0,0,100,.07); }
 
     /* ── Layout ──────────────────────────────────────── */
     .layout {
@@ -89,7 +178,8 @@
       flex-wrap: wrap;
       justify-content: center;
       width: 100%;
-      max-width: 880px;
+      max-width: 1040px;
+      transition: opacity .18s ease;
     }
     canvas { cursor: pointer; flex-shrink: 0; display: block; }
 
@@ -97,377 +187,767 @@
     .panel {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px 18px;
-      min-width: 230px;
+      border-radius: 20px;
+      padding: 24px 22px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.45);
+      min-width: 380px;
       flex: 1;
-    }
-    .empty-state {
+      height: 460px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 26px 0 12px;
-      color: var(--muted);
-      font-size: 0.82rem;
-      text-align: center;
-      gap: 10px;
     }
-    .empty-icon { font-size: 2rem; opacity: .3; }
+    @media (max-width: 880px) { .panel { height: auto; } }
 
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; flex: 1;
+      color: var(--muted); font-size: 0.82rem; text-align: center; gap: 10px;
+    }
+    .empty-icon svg { width: 78px; height: 78px; display: block; }
+    .empty-icon .ei-seg {
+      filter: drop-shadow(0 0 5px rgba(0,232,125,.55));
+      animation: ei-seg-pulse 2.6s ease-in-out infinite;
+    }
+    @keyframes ei-seg-pulse {
+      0%, 100% { opacity: .5; }
+      50%      { opacity: 1;  }
+    }
+    .empty-icon .ei-ripple {
+      transform-box: fill-box; transform-origin: center;
+      animation: ei-ripple 2.6s cubic-bezier(.25,.46,.45,.94) infinite;
+    }
+    @keyframes ei-ripple {
+      0%       { transform: scale(.35); opacity: .75; }
+      62%      { transform: scale(1.05); opacity: 0; }
+      100%     { transform: scale(1.05); opacity: 0; }
+    }
+
+    .cats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 18px; row-gap: 0;
+      align-content: start;
+      flex: 1; min-height: 0;
+    }
     .sel-header {
-      display: flex;
-      align-items: baseline;
-      gap: 12px;
-      margin-bottom: 18px;
-      padding-bottom: 14px;
+      display: flex; align-items: baseline; gap: 12px;
+      margin-bottom: 18px; padding-bottom: 14px;
       border-bottom: 1px solid var(--border);
     }
-    .sel-code { font-size: 3rem; font-weight: 800; letter-spacing: 3px; line-height: 1; color: var(--perfect); text-shadow: 0 0 18px rgba(0,232,125,.4); }
-
-    /* Category rows */
+    .sel-code {
+      font-size: 3rem; font-weight: 800; letter-spacing: 3px;
+      line-height: 1; color: var(--perfect);
+      text-shadow: 0 0 24px rgba(0,232,125,.25);
+      display: inline-block;
+    }
     .cat { margin-bottom: 12px; }
     .cat-head {
-      font-size: 0.63rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 7px;
-      display: flex;
-      align-items: center;
-      gap: 7px;
+      font-size: 0.63rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 2px; margin-bottom: 7px;
+      display: flex; align-items: center; gap: 7px;
     }
     .cat-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-    /* Sub-level row inside a category */
-    .sublevel {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin-bottom: 5px;
-    }
+    .sublevel { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
     .lv-tag {
-      font-size: 0.58rem;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      color: var(--muted);
-      width: 22px;
-      flex-shrink: 0;
-      text-transform: uppercase;
+      font-size: 0.58rem; font-weight: 700; letter-spacing: 1.5px;
+      color: var(--muted); width: 22px; flex-shrink: 0; text-transform: uppercase;
     }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
     .chip {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 52px;
-      height: 38px;
-      padding: 0 8px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-      cursor: pointer;
-      border: 1.5px solid;
-      transition: transform .12s, box-shadow .12s;
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 52px; height: 38px; padding: 0 8px;
+      border-radius: 10px; font-size: 0.95rem; font-weight: 700;
+      letter-spacing: 1px; cursor: pointer; border: 1.5px solid;
+      transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s;
       user-select: none;
     }
-    .chip:hover { transform: scale(1.1); }
-    .chip:active { transform: scale(0.94); }
+    .chip:hover  { transform: scale(1.12) !important; }
+    .chip:active { transform: scale(0.92) !important; }
 
-    .chip.perfect  { color: var(--perfect); border-color: var(--perfect); background: rgba(0,232,125,.12); }
-    .chip.boost1   { color: var(--b1);      border-color: var(--b1);      background: rgba(255,208,96,.1); }
-    .chip.boost2   { color: var(--b2);      border-color: var(--b2);      background: rgba(255,148,0,.13); }
-    .chip.boost3   { color: var(--b3);      border-color: var(--b3);      background: rgba(255,56,0,.13);  }
-    .chip.mood     { color: var(--mood);    border-color: var(--mood);    background: rgba(208,64,184,.12); }
-    .chip.drop1    { color: var(--d1);      border-color: var(--d1);      background: rgba(136,196,255,.1); }
-    .chip.drop2    { color: var(--d2);      border-color: var(--d2);      background: rgba(77,138,255,.13); }
-    .chip.drop3    { color: var(--d3);      border-color: var(--d3);      background: rgba(16,48,238,.13); }
+    /* Dark-mode chips: vivid fills */
+    .chip.perfect { color:#001a08; border-color:#00e87d; background:rgba(0,228,122,.82); box-shadow:0 0 8px rgba(0,228,122,.35); }
+    .chip.boost1  { color:#252000; border-color:#ffd060; background:rgba(255,200,48,.80); box-shadow:0 0 7px rgba(255,200,48,.30); }
+    .chip.boost2  { color:#251000; border-color:#ff9400; background:rgba(255,138,0,.80);  box-shadow:0 0 8px rgba(255,138,0,.35); }
+    .chip.boost3  { color:#fff;    border-color:#ff4400; background:rgba(255,50,0,.78);   box-shadow:0 0 9px rgba(255,50,0,.38); }
+    .chip.mood    { color:#fff;    border-color:#dc44c4; background:rgba(218,52,196,.78); box-shadow:0 0 8px rgba(218,52,196,.35); }
+    .chip.drop1   { color:#001228; border-color:#88c4ff; background:rgba(126,194,255,.78);box-shadow:0 0 7px rgba(126,194,255,.30); }
+    .chip.drop2   { color:#fff;    border-color:#4d8aff; background:rgba(56,120,255,.80); box-shadow:0 0 8px rgba(56,120,255,.35); }
+    .chip.drop3   { color:#fff;    border-color:#2040f0; background:rgba(16,38,210,.80);  box-shadow:0 0 9px rgba(16,38,210,.38); }
+    /* Light-mode chips: restore muted tint look */
+    body.light-mode .chip.perfect { color:var(--perfect);border-color:var(--perfect);background:rgba(0,232,125,.12); box-shadow:none; }
+    body.light-mode .chip.boost1  { color:var(--b1);     border-color:var(--b1);     background:rgba(255,208,96,.12);box-shadow:none; }
+    body.light-mode .chip.boost2  { color:var(--b2);     border-color:var(--b2);     background:rgba(255,148,0,.13); box-shadow:none; }
+    body.light-mode .chip.boost3  { color:var(--b3);     border-color:var(--b3);     background:rgba(255,56,0,.13);  box-shadow:none; }
+    body.light-mode .chip.mood    { color:var(--mood);   border-color:var(--mood);   background:rgba(208,64,184,.12);box-shadow:none; }
+    body.light-mode .chip.drop1   { color:var(--d1);     border-color:var(--d1);     background:rgba(136,196,255,.1);box-shadow:none; }
+    body.light-mode .chip.drop2   { color:var(--d2);     border-color:var(--d2);     background:rgba(77,138,255,.13);box-shadow:none; }
+    body.light-mode .chip.drop3   { color:var(--d3);     border-color:var(--d3);     background:rgba(16,48,238,.13); box-shadow:none; }
 
     /* Legend */
     .legend {
-      margin-top: 16px;
-      padding-top: 13px;
-      border-top: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5px 14px;
+      margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--border);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px;
     }
     .leg-item {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 0.68rem;
-      color: var(--muted);
-      cursor: pointer;
-      user-select: none;
-      transition: opacity .15s;
+      display: flex; align-items: center; gap: 7px; font-size: 0.68rem;
+      color: var(--muted); cursor: pointer; user-select: none; transition: opacity .15s;
     }
     .leg-item:hover { opacity: .72; }
     .leg-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; transition: background .18s; }
-
-    /* Mini toggle pill on the right of each legend item */
     .leg-mini-pill {
-      margin-left: auto;
-      width: 26px;
-      height: 14px;
-      border-radius: 7px;
-      border: 1px solid var(--tc, var(--muted));
-      position: relative;
-      flex-shrink: 0;
+      margin-left: auto; width: 26px; height: 14px; border-radius: 7px;
+      border: 1px solid var(--tc, var(--muted)); position: relative; flex-shrink: 0;
       transition: border-color .18s;
     }
     .leg-mini-pill::after {
-      content: '';
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--tc, var(--muted));
-      box-shadow: 0 0 5px var(--tc, transparent);
+      content: ''; position: absolute; top: 2px; right: 2px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--tc, var(--muted)); box-shadow: 0 0 5px var(--tc, transparent);
       transition: right .18s, left .18s, background .18s, box-shadow .18s;
     }
-
-    /* Disabled legend item */
     .leg-item.leg-off { color: rgba(255,255,255,.22); }
-    .leg-item.leg-off .leg-dot { background: #1e1e32 !important; }
-    .leg-item.leg-off .leg-mini-pill { border-color: #2a2a48; }
-    .leg-item.leg-off .leg-mini-pill::after {
-      right: auto;
-      left: 2px;
-      background: #2e2e4e;
-      box-shadow: none;
-    }
-
-    /* Disabled chips in the panel */
+    .leg-item.leg-off .leg-dot { background: #232327 !important; }
+    .leg-item.leg-off .leg-mini-pill { border-color: #2c2c31; }
+    .leg-item.leg-off .leg-mini-pill::after { right:auto;left:2px;background:#3a3a3f;box-shadow:none; }
     .chip.chip-off {
-      background: rgba(255,255,255,.03) !important;
-      border-color: rgba(255,255,255,.07) !important;
-      color: rgba(255,255,255,.18) !important;
-      box-shadow: none !important;
-      cursor: default;
+      background:rgba(255,255,255,.03)!important; border-color:rgba(255,255,255,.07)!important;
+      color:rgba(255,255,255,.18)!important; box-shadow:none!important; cursor:default;
     }
-
-    /* Disabled sublevel row in panel */
-    .sublevel.sublevel-off {
-      opacity: 0.22;
-      pointer-events: none;
-    }
+    .sublevel.sublevel-off { opacity:.22; pointer-events:none; }
 
     /* ── Light Mode ──────────────────────────────────── */
-    body.light-mode {
-      --bg:      #f0f0f8;
-      --surface: #ffffff;
-      --border:  #d0d0e8;
-      --text:    #1a1a3a;
-      --muted:   #8888b8;
-      --accent:  #0060c8;
-    }
-    body.light-mode h1 {
-      color: var(--accent);
-      text-shadow: 0 0 28px rgba(0,100,200,.3);
-    }
-    body.light-mode .subtitle { color: var(--muted); }
+    body.light-mode { --bg:#f5f5f7;--surface:#ffffff;--border:rgba(0,0,0,.10);--text:#1d1d1f;--muted:#6e6e73;--accent:#0071e3; }
+    body.light-mode h1  { color:var(--text); text-shadow:none; }
+    body.light-mode .subtitle { color:var(--muted); }
     body.light-mode .qbtn.ql-dim {
-      background:   rgba(0,0,50,.04) !important;
-      border-color: rgba(0,0,50,.08) !important;
-      color:        rgba(0,0,50,.14) !important;
+      background:rgba(0,0,50,.04)!important; border-color:rgba(0,0,50,.08)!important; color:rgba(0,0,50,.14)!important;
     }
 
     /* Theme button */
     .theme-btn {
-      margin-left: auto;
-      background: #1a1a30;
-      border: 1px solid #2a2a50;
-      border-radius: 8px;
-      color: var(--muted);
-      width: 34px;
-      height: 24px;
-      padding: 0;
-      cursor: pointer;
-      font-size: 1rem;
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: border-color .2s, color .2s, background .2s;
-      flex-shrink: 0;
+      background:transparent; border:1px solid var(--border); border-radius:50%;
+      color:var(--muted); width:34px; height:34px; padding:0; cursor:pointer;
+      font-size:1rem; line-height:1; display:flex; align-items:center; justify-content:center;
+      transition:border-color .2s,color .2s,background .2s; flex-shrink:0;
     }
-    .theme-btn:hover { color: var(--text); }
-    /* In light mode: restore the box */
-    body.light-mode .theme-btn {
-      background: var(--surface);
-      border-color: var(--border);
-    }
-    body.light-mode .theme-btn:hover { border-color: var(--accent); }
+    .theme-btn:hover { color:var(--text); }
+    .theme-btn svg { width: 16px; height: 16px; display: block; }
+    .theme-btn .icon-moon { display: none; }
+    body.light-mode .theme-btn .icon-sun  { display: none; }
+    body.light-mode .theme-btn .icon-moon { display: block; }
+    body.light-mode .theme-btn { background:var(--surface); border-color:var(--border); }
+    body.light-mode .theme-btn:hover { border-color:var(--accent); }
 
-    /* ── Tonarten Toggle ─────────────────────────────── */
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      font-size: 0.7rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--muted);
-      width: 100%;
-      max-width: 880px;
-    }
-    .toggle-label { user-select: none; cursor: pointer; }
-
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    /* ── Key-Names toggle (lives inside mode-bar) ───────── */
+    .toggle-switch { position:relative; display:inline-block; width:36px; height:20px; cursor:pointer; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; position:absolute; }
     .toggle-track {
-      position: absolute;
-      inset: 0;
-      background: #1a1a30;
-      border: 1px solid #2a2a50;
-      border-radius: 12px;
-      transition: background .22s, border-color .22s;
+      position:absolute; inset:0; background:#2c2c31; border:1px solid rgba(255,255,255,.08);
+      border-radius:10px; transition:background .22s,border-color .22s;
     }
-    .toggle-switch input:checked ~ .toggle-track {
-      background: rgba(0,232,125,.22);
-      border-color: var(--perfect);
-    }
+    .toggle-switch input:checked ~ .toggle-track { background:rgba(0,232,125,.22); border-color:var(--perfect); }
     .toggle-thumb {
-      position: absolute;
-      top: 4px;
-      left: 4px;
-      width: 14px;
-      height: 14px;
-      background: #44446a;
-      border-radius: 50%;
-      transition: transform .22s, background .22s;
-      pointer-events: none;
+      position:absolute; top:3px; left:3px; width:12px; height:12px;
+      background:#6e6e73; border-radius:50%;
+      transition:transform .22s,background .22s; pointer-events:none;
     }
     .toggle-switch input:checked ~ .toggle-track .toggle-thumb {
-      transform: translateX(20px);
-      background: var(--perfect);
-      box-shadow: 0 0 7px rgba(0,232,125,.6);
+      transform:translateX(16px); background:var(--perfect); box-shadow:0 0 6px rgba(0,232,125,.6);
     }
-    .toggle-on-label {
-      color: var(--perfect);
-      font-size: 0.68rem;
-      text-shadow: 0 0 8px rgba(0,232,125,.4);
-      display: none;
+    .mode-kn-label {
+      font-size:.6rem; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      color:var(--muted); cursor:pointer; user-select:none; padding:0 2px;
+      transition:color .18s;
     }
-    #kn-toggle:checked ~ * ~ .toggle-on-label { display: inline; }
-    #kn-toggle:checked ~ * ~ .toggle-off-label { display: none; }
-    .toggle-off-label { display: inline; }
+    .mode-kn-label.kn-on { color:var(--perfect); text-shadow:0 0 8px rgba(0,232,125,.4); }
+    body.light-mode .mode-kn-label { color:var(--muted); }
+    body.light-mode .toggle-track  { background:var(--surface); border-color:var(--border); }
 
-    /* ── Quick Grid ──────────────────────────────────── */
-    .quick-wrap { width: 100%; max-width: 880px; }
-    .quick-label {
-      font-size: 0.63rem;
-      letter-spacing: 3px;
-      text-transform: uppercase;
+    /* ══════════════════════════════════════════════════
+       QUICK CHECK MODE
+    ══════════════════════════════════════════════════ */
+    .qm-btn {
+      display: flex; align-items: center; gap: 7px;
+      height: 46px; padding: 0 15px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; cursor: pointer;
+      font-family: inherit; font-size: .66rem; font-weight: 700;
+      letter-spacing: 1.8px; text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 9px;
-      text-align: center;
+      transition: color .18s, border-color .18s, background .18s, box-shadow .18s;
+      flex-shrink: 0;
     }
+    .qm-btn svg { width: 11px; height: 15px; display: block; }
+    .qm-btn:hover { color: var(--text); }
+    /* Active state glows gold — matching the "Pro" in the logo */
+    .qm-btn.qm-active {
+      color: #ffb300;
+      border-color: rgba(255,170,0,.45);
+      background: rgba(255,170,0,.08);
+      box-shadow: 0 8px 26px rgba(255,170,0,.22);
+      text-shadow: none;
+    }
+    body.light-mode .qm-btn.qm-active {
+      color: #c08800;
+      border-color: rgba(180,130,0,.45);
+      background: rgba(255,200,60,.12);
+      box-shadow: 0 0 14px rgba(180,130,0,.20);
+      text-shadow: none;
+    }
+
+    /* Focus feel: panel glows gold, layout-mode bar disabled */
+    body.quick-mode .panel {
+      border-color: rgba(255,200,60,.32);
+      box-shadow: 0 0 36px rgba(255,200,60,.09);
+    }
+    body.light-mode.quick-mode .panel {
+      border-color: rgba(180,130,0,.32);
+      box-shadow: 0 0 24px rgba(180,130,0,.10);
+    }
+    body.quick-mode .mode-bar { opacity: .35; pointer-events: none; }
+
+    .qm-card {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px; text-align: center; padding: 8px 0;
+    }
+    .qm-title {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: .7rem; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: #ffb300;
+    }
+    body.light-mode .qm-title { color: #c08800; text-shadow: none; }
+    .qm-title .qm-sub {
+      font-size: .56rem; font-weight: 600; letter-spacing: 1.5px; color: var(--muted);
+    }
+    .qm-keys { display: flex; align-items: center; gap: 14px; }
+    .qm-key {
+      min-width: 86px; padding: 13px 10px;
+      border: 1.5px solid var(--border); border-radius: 14px;
+      background: rgba(255,255,255,.03);
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      font-size: 1.7rem; font-weight: 800; letter-spacing: 2px;
+      color: var(--text); line-height: 1.1;
+      animation: chip-pop .3s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    body.light-mode .qm-key { background: rgba(0,0,80,.03); }
+    .qm-key small { font-size: .6rem; font-weight: 600; letter-spacing: 1px; color: var(--muted); }
+    .qm-key-empty { color: var(--muted); opacity: .45; border-style: dashed; box-shadow: none !important; }
+    .qm-swap {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); font-size: 1.05rem; line-height: 1; cursor: pointer;
+      transition: color .18s, border-color .18s, transform .3s; flex-shrink: 0;
+    }
+    .qm-swap:not(:disabled):hover { color: var(--accent); border-color: var(--accent); transform: rotate(180deg); }
+    .qm-swap:disabled { opacity: .3; cursor: default; }
+    .qm-hint { font-size: .8rem; color: var(--muted); line-height: 1.55; max-width: 270px; }
+    .qm-hint strong { color: var(--text); }
+    .qm-verdict {
+      --vc: #fff;
+      position: relative;
+      display: flex; flex-direction: column; gap: 10px;
+      max-width: 340px;
+      padding: 18px 28px 20px;
+      animation: sel-bounce .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    /* Corner brackets in the category color — a hinted frame as eye-catcher */
+    .qm-verdict::before, .qm-verdict::after {
+      content: ''; position: absolute;
+      width: 28px; height: 28px;
+      border: 2.5px solid var(--vc);
+      filter: drop-shadow(0 0 6px var(--vc));
+      pointer-events: none;
+    }
+    .qm-verdict::before { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
+    .qm-verdict::after  { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 10px; }
+    body.light-mode .qm-verdict::before,
+    body.light-mode .qm-verdict::after { filter: none; }
+    .qm-verdict-name {
+      font-size: 1.8rem; font-weight: 800; letter-spacing: 1px;
+      color: var(--vc); text-shadow: 0 0 24px var(--vc);
+    }
+    body.light-mode .qm-verdict-name { text-shadow: none; }
+    .qm-verdict-body { font-size: .78rem; color: var(--text); opacity: .75; line-height: 1.55; }
+    .qm-note { font-size: .64rem; color: var(--muted); letter-spacing: .04em; line-height: 1.5; max-width: 260px; }
+    .qm-reset {
+      padding: 8px 20px; border-radius: 999px;
+      border: 1px solid var(--border); background: transparent;
+      font-family: inherit; font-size: .64rem; font-weight: 700;
+      letter-spacing: 1.8px; text-transform: uppercase;
+      color: var(--muted); cursor: pointer;
+      transition: color .18s, border-color .18s;
+    }
+    .qm-reset:not(:disabled):hover { color: var(--text); border-color: var(--accent); }
+    .qm-reset:disabled { opacity: .3; cursor: default; }
+
+    /* Clash highlight in quick-select grid */
+    .qbtn.q-clash { background:rgba(255,32,72,.82)!important; border-color:#ff2848!important; color:#fff!important; box-shadow:0 0 12px rgba(255,32,72,.5)!important; }
+    body.light-mode .qbtn.q-clash { background:#ff2848!important; border-color:#fff!important; color:#fff!important; box-shadow:none!important; }
+
+    /* ── Quick Grid (default) ────────────────────────── */
+    .quick-wrap { width:100%; max-width:1040px; }
+    .quick-label { font-size:.63rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;text-align:center; }
     .quick-grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
       gap: 5px;
     }
-    .qkey { display: flex; flex-direction: column; gap: 4px; }
-    .pos-num { text-align: center; font-size: 0.58rem; color: var(--muted); padding-top: 1px; }
-
+    .qkey { display:flex; flex-direction:column; gap:4px; }
+    .pos-num { text-align:center; font-size:.58rem; color:var(--muted); padding-top:1px; }
     .qbtn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 34px;
-      border-radius: 7px;
-      font-size: 0.76rem;
-      font-weight: 700;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: transform .1s, filter .1s, box-shadow .1s;
-      user-select: none;
-      letter-spacing: .5px;
+      display:flex; align-items:center; justify-content:center;
+      height:34px; border-radius:9px; font-size:.76rem; font-weight:700;
+      cursor:pointer; border:1px solid transparent;
+      transition:filter .12s,box-shadow .15s,opacity .45s ease; user-select:none; letter-spacing:.5px;
     }
-    .qbtn:hover { transform: scale(1.08); filter: brightness(1.35); }
-    .qbtn:active { transform: scale(0.93); }
-
-    /* Dim state — matches wheel "dim" segments */
+    /* Quick-mode soft focus: two-stage fade + dashed hint on matching keys */
+    .qbtn.q-soft  { opacity:.5; }
+    .qbtn.q-soft2 { opacity:.22; }
+    .qbtn.q-match { border:1.5px dashed rgba(255,255,255,.75) !important; }
+    body.light-mode .qbtn.q-match { border-color:rgba(0,0,0,.5) !important; }
+    .qbtn:hover  { filter:brightness(1.35); transform:scale(1.08) !important; }
+    .qbtn:active { transform:scale(0.93) !important; }
     .qbtn.ql-dim {
-      background:   rgba(255,255,255,.02) !important;
-      border-color: rgba(255,255,255,.05) !important;
-      color:        rgba(255,255,255,.14) !important;
-      box-shadow:   none !important;
-      filter: none !important;
+      background:rgba(255,255,255,.02)!important; border-color:rgba(255,255,255,.05)!important;
+      color:rgba(255,255,255,.14)!important; box-shadow:none!important; filter:none!important;
     }
-    .qbtn.ql-dim:hover { filter: brightness(1.5) !important; }
+    .qbtn.ql-dim:hover { filter:brightness(1.5)!important; }
 
-    /* Active states */
-    .qbtn.q-sel     { background:var(--perfect) !important; border-color:#fff !important; color:#003a1a !important; box-shadow: 0 0 14px rgba(0,232,125,.6) !important; }
-    .qbtn.q-perfect { background:rgba(0,232,125,.25) !important; border-color:var(--perfect) !important; color:var(--perfect) !important; box-shadow:0 0 8px rgba(0,232,125,.35) !important; }
-    .qbtn.q-boost1  { background:rgba(255,208,96,.18) !important; border-color:var(--b1)      !important; color:var(--b1)      !important; box-shadow:0 0 6px rgba(255,208,96,.25) !important; }
-    .qbtn.q-boost2  { background:rgba(255,148,0,.22)  !important; border-color:var(--b2)      !important; color:var(--b2)      !important; box-shadow:0 0 8px rgba(255,148,0,.35) !important; }
-    .qbtn.q-boost3  { background:rgba(255,56,0,.22)   !important; border-color:var(--b3)      !important; color:var(--b3)      !important; box-shadow:0 0 8px rgba(255,56,0,.35)  !important; }
-    .qbtn.q-mood    { background:rgba(208,64,184,.22)  !important; border-color:var(--mood)    !important; color:var(--mood)    !important; box-shadow:0 0 8px rgba(208,64,184,.35) !important; }
-    .qbtn.q-drop1   { background:rgba(136,196,255,.18) !important; border-color:var(--d1)      !important; color:var(--d1)      !important; box-shadow:0 0 6px rgba(136,196,255,.25) !important; }
-    .qbtn.q-drop2   { background:rgba(77,138,255,.22)  !important; border-color:var(--d2)      !important; color:var(--d2)      !important; box-shadow:0 0 8px rgba(77,138,255,.35) !important; }
-    .qbtn.q-drop3   { background:rgba(16,48,238,.22)   !important; border-color:var(--d3)      !important; color:var(--d3)      !important; box-shadow:0 0 8px rgba(16,48,238,.35)  !important; }
+    /* Dark-mode: vivid fills matching wheel segment colors */
+    .qbtn.q-sel     { background:var(--perfect)!important;border-color:#fff!important;color:#003a1a!important;box-shadow:0 0 14px rgba(0,232,125,.65)!important; }
+    .qbtn.q-perfect { background:rgba(0,228,122,.84)!important;border-color:#00e87d!important;color:#001a08!important;box-shadow:0 0 10px rgba(0,228,122,.50)!important; }
+    .qbtn.q-boost1  { background:rgba(255,200,48,.82)!important;border-color:#ffd060!important;color:#252000!important;box-shadow:0 0 8px rgba(255,200,48,.45)!important; }
+    .qbtn.q-boost2  { background:rgba(255,138,0,.82)!important; border-color:#ff9400!important;color:#251000!important;box-shadow:0 0 10px rgba(255,138,0,.50)!important; }
+    .qbtn.q-boost3  { background:rgba(255,50,0,.80)!important;  border-color:#ff4400!important;color:#fff!important;   box-shadow:0 0 11px rgba(255,50,0,.50)!important; }
+    .qbtn.q-mood    { background:rgba(218,52,196,.80)!important; border-color:#dc44c4!important;color:#fff!important;   box-shadow:0 0 10px rgba(218,52,196,.50)!important; }
+    .qbtn.q-drop1   { background:rgba(126,194,255,.80)!important;border-color:#88c4ff!important;color:#001228!important;box-shadow:0 0 8px rgba(126,194,255,.45)!important; }
+    .qbtn.q-drop2   { background:rgba(56,120,255,.82)!important; border-color:#4d8aff!important;color:#fff!important;   box-shadow:0 0 10px rgba(56,120,255,.50)!important; }
+    .qbtn.q-drop3   { background:rgba(16,38,210,.82)!important;  border-color:#2040f0!important;color:#fff!important;   box-shadow:0 0 11px rgba(16,38,210,.50)!important; }
 
-    /* ── Light-mode active Quick Select states ──────────── */
-    body.light-mode .qbtn.q-sel     { background: #00e87d !important; border-color: #000000 !important; color: #003a1a !important; box-shadow: 0 0 16px rgba(0,232,125,.55) !important; }
-    body.light-mode .qbtn.q-perfect { background: #00e87d !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
-    body.light-mode .qbtn.q-boost1  { background: #ffd060 !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
-    body.light-mode .qbtn.q-boost2  { background: #ff9400 !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
-    body.light-mode .qbtn.q-boost3  { background: #ff4000 !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
-    body.light-mode .qbtn.q-mood    { background: #d040b8 !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
-    body.light-mode .qbtn.q-drop1   { background: #88c4ff !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
-    body.light-mode .qbtn.q-drop2   { background: #4d8aff !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
-    body.light-mode .qbtn.q-drop3   { background: #1030dc !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: none !important; }
+    /* Light-mode quick */
+    body.light-mode .qbtn.q-sel     { background:#00e87d!important;border-color:#000!important;color:#003a1a!important;box-shadow:0 0 16px rgba(0,232,125,.55)!important; }
+    body.light-mode .qbtn.q-perfect { background:#00e87d!important;border-color:#fff!important;color:#fff!important;box-shadow:none!important; }
+    body.light-mode .qbtn.q-boost1  { background:#ffd060!important;border-color:#fff!important;color:#fff!important;box-shadow:none!important; }
+    body.light-mode .qbtn.q-boost2  { background:#ff9400!important;border-color:#fff!important;color:#fff!important;box-shadow:none!important; }
+    body.light-mode .qbtn.q-boost3  { background:#ff4000!important;border-color:#fff!important;color:#fff!important;box-shadow:none!important; }
+    body.light-mode .qbtn.q-mood    { background:#d040b8!important;border-color:#fff!important;color:#fff!important;box-shadow:none!important; }
+    body.light-mode .qbtn.q-drop1   { background:#88c4ff!important;border-color:#fff!important;color:#fff!important;box-shadow:none!important; }
+    body.light-mode .qbtn.q-drop2   { background:#4d8aff!important;border-color:#fff!important;color:#fff!important;box-shadow:none!important; }
+    body.light-mode .qbtn.q-drop3   { background:#1030dc!important;border-color:#fff!important;color:#fff!important;box-shadow:none!important; }
 
-    /* ── Light-mode disabled overrides ──────────────────── */
-    body.light-mode .leg-item.leg-off         { color: rgba(0,0,50,.30); }
-    body.light-mode .leg-item.leg-off .leg-dot{ background: #c8c8dc !important; }
-    body.light-mode .chip.chip-off {
-      background:   rgba(0,0,50,.05) !important;
-      border-color: rgba(0,0,50,.13) !important;
-      color:        rgba(0,0,50,.28) !important;
+    /* Light-mode disabled */
+    body.light-mode .leg-item.leg-off         { color:rgba(0,0,50,.30); }
+    body.light-mode .leg-item.leg-off .leg-dot{ background:#c8c8dc!important; }
+    body.light-mode .chip.chip-off { background:rgba(0,0,50,.05)!important;border-color:rgba(0,0,50,.13)!important;color:rgba(0,0,50,.28)!important; }
+    body.light-mode .sublevel.sublevel-off { opacity:.38; }
+
+    /* ══════════════════════════════════════════════════
+       LAYOUT MODES
+    ══════════════════════════════════════════════════ */
+
+    /* ── Mode: no-panel (Wheel + Quick side by side) ── */
+    body.mode-no-panel .panel         { display: none !important; }
+    body.mode-no-panel .layout        { align-items: stretch; }
+    body.mode-no-panel .quick-wrap    {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      width: auto;
+      max-width: none;
     }
-    body.light-mode .sublevel.sublevel-off { opacity: 0.38; }
+    body.mode-no-panel .quick-label   { display: none; }
+    body.mode-no-panel .quick-grid    {
+      flex: 1;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 5px;
+    }
+    body.mode-no-panel .qbtn          { flex: 1; height: auto; font-size: .82rem; border-radius: 10px; }
+
+    /* ── Mode: wheel-only ─────────────────────────────── */
+    body.mode-wheel-only .panel       { display: none !important; }
+    body.mode-wheel-only .quick-wrap  { display: none !important; }
+    body.mode-wheel-only .layout      { justify-content: center; align-items: center; }
+
+    /* ── Mode: no-wheel (Panel + Quick side by side) ─── */
+    body.mode-no-wheel canvas         { display: none !important; }
+    body.mode-no-wheel .layout        { align-items: stretch; padding-top: 32px; }
+    body.mode-no-wheel .quick-wrap    {
+      flex: 1;
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      width: auto;
+      max-width: none;
+    }
+    body.mode-no-wheel .quick-label   { display: none; }
+    body.mode-no-wheel .quick-grid    {
+      flex: 1;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 5px;
+    }
+    body.mode-no-wheel .qbtn          { flex: 1; height: auto; font-size: .88rem; border-radius: 10px; }
+    body.mode-no-wheel .panel         { flex: 0 0 380px; }
+
+    /* ── Mode: dual wheels ────────────────────────────── */
+    /* wrappers are layout-transparent in every other mode */
+    .wheel-col { display: contents; }
+    .wheel-col-r { display: none; }
+    .wheel-legend { display: none; }
+    body.mode-dual .panel      { display: none !important; }
+    body.mode-dual .quick-wrap { display: none !important; }
+    /* global category settings are parked & disabled in dual view */
+    body.mode-dual #cat-btn    { opacity: .35; pointer-events: none; }
+    body.mode-dual .layout     { align-items: flex-start; }
+    body.mode-dual .wheel-col {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px; flex: 0 1 auto;
+    }
+    body.mode-dual .wheel-col-r { display: flex; }
+    body.mode-dual .wheel-legend {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 12px 16px;
+      width: 100%; max-width: 460px;
+    }
+
+    /* ══════════════════════════════════════════════════
+       PREMIUM ANIMATIONS
+    ══════════════════════════════════════════════════ */
+    @keyframes sel-bounce {
+      0%   { opacity:0; transform:scale(.5) translateY(6px); }
+      55%  { opacity:1; transform:scale(1.14) translateY(-2px); }
+      78%  { transform:scale(.95) translateY(0); }
+      100% { opacity:1; transform:scale(1) translateY(0); }
+    }
+    @keyframes cat-slide {
+      from { opacity:0; transform:translateX(-10px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    @keyframes chip-pop {
+      0%   { opacity:0; transform:scale(.72) translateY(6px); }
+      58%  { opacity:1; transform:scale(1.09) translateY(-1px); }
+      80%  { transform:scale(.96); }
+      100% { opacity:1; transform:scale(1) translateY(0); }
+    }
+    @keyframes empty-in {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes qbtn-pop {
+      0%   { transform:scale(1); }
+      35%  { transform:scale(1.18); }
+      65%  { transform:scale(.94); }
+      83%  { transform:scale(1.04); }
+      100% { transform:scale(1); }
+    }
+    @keyframes qbtn-breathe {
+      0%,100% { box-shadow:0 0 10px rgba(0,232,125,.45); }
+      50%      { box-shadow:0 0 22px rgba(0,232,125,.75); }
+    }
+    .qbtn.q-sel { animation: qbtn-breathe 2.4s ease-in-out infinite !important; }
+
+    /* ── Mixing Tip Tooltip ──────────────────────────────────── */
+    #cwTip {
+      position: fixed;
+      z-index: 8000;
+      pointer-events: none;
+      max-width: 230px;
+      background: rgba(19,19,22,.85);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 9px 13px 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .15s ease, transform .15s ease;
+      font-size: .74rem;
+      line-height: 1.5;
+    }
+    #cwTip.tip-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #cwTip .tip-cat {
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    #cwTip .tip-body {
+      color: rgba(255,255,255,.75);
+    }
+    body.light-mode #cwTip {
+      background: rgba(255,255,255,.97);
+      border-color: rgba(0,0,0,.10);
+      box-shadow: 0 6px 24px rgba(0,0,0,.14);
+    }
+    body.light-mode #cwTip .tip-body { color: rgba(0,0,20,.65); }
+
+    /* ══════════════════════════════════════════════════
+       MOBILE & TOUCH SUPPORT
+    ══════════════════════════════════════════════════ */
+
+    /* ── Touch devices: neutralize sticky hover states ── */
+    @media (hover: none) {
+      .chip:hover        { transform: none !important; }
+      .chip:active       { transform: scale(.92) !important; }
+      .qbtn:hover        { filter: none; transform: none !important; }
+      .qbtn:active       { transform: scale(.93) !important; }
+      .qbtn.ql-dim:hover { filter: none !important; }
+      .mode-btn:hover           { background: transparent; color: var(--muted); }
+      .mode-btn.active,
+      .mode-btn.active:hover    { background: rgba(41,151,255,.12); color: var(--accent); }
+      .sbar-btn:hover           { background: transparent; color: var(--muted); }
+      .sbar-btn.sbar-active,
+      .sbar-btn.sbar-active:hover { background: rgba(41,151,255,.12); color: var(--accent); }
+      .leg-item:hover    { opacity: 1; }
+      #cwTip             { display: none; }  /* hover tips are pointless on touch */
+    }
+
+    /* ── Tablets & small laptops ≤ 880px ──────────────── */
+    @media (max-width: 880px) {
+      .panel { min-width: 0; width: 100%; flex: 1 1 100%; }
+      body.mode-no-wheel .panel { flex: 1 1 100%; }
+      body.mode-no-wheel .layout { padding-top: 0; }
+    }
+
+    /* ── Phones ≤ 600px ───────────────────────────────── */
+    @media (max-width: 600px) {
+      body { padding: 10px 10px calc(28px + env(safe-area-inset-bottom)); gap: 11px; }
+      h1 { font-size: 1.05rem; letter-spacing: 4px; }
+      .subtitle { font-size: .64rem; }
+      .layout { gap: 14px; }
+
+      .panel { padding: 16px 12px; height: auto; }
+      .cats-grid { grid-template-columns: 1fr; column-gap: 0; }
+      .sel-code { font-size: 2.2rem; }
+      .legend { gap: 4px 10px; }
+      .chip { min-width: 50px; height: 42px; }
+
+      /* Quick grid: 6 columns × 2 blocks instead of 12 narrow columns */
+      .quick-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+      .qbtn { height: 42px; font-size: .8rem; }
+      body.mode-no-panel .quick-grid,
+      body.mode-no-wheel .quick-grid {
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: none;
+        grid-auto-rows: minmax(44px, auto);
+      }
+      body.mode-no-panel .qbtn,
+      body.mode-no-wheel .qbtn { min-height: 44px; height: auto; }
+      body.mode-no-panel .quick-wrap,
+      body.mode-no-wheel .quick-wrap { min-width: 100%; }
+
+      /* Categories dropdown: centered & clamped to viewport */
+      .cat-dropdown {
+        position: fixed;
+        left: 50%; right: auto; top: 118px;
+        transform: translateX(-50%);
+        width: min(320px, calc(100vw - 20px));
+      }
+
+      .qm-btn  { height: 44px; padding: 0 12px; }
+      .qm-keys { gap: 10px; }
+      .qm-key  { min-width: 72px; font-size: 1.45rem; padding: 11px 8px; }
+      .qm-verdict { padding: 14px 18px 16px; max-width: 300px; }
+      .qm-verdict-name { font-size: 1.5rem; }
+
+      .info-card { padding: 20px 16px 18px; }
+      .info-cat-row { flex-wrap: wrap; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       CI MOTION — gentle, natural, never abrupt
+    ══════════════════════════════════════════════════ */
+    .mode-btn, .sbar-btn, .theme-btn, .qm-btn, .qm-swap, .qm-reset,
+    .leg-item, .cat-drop-row, .info-close {
+      transition-duration: .3s;
+      transition-timing-function: var(--ease);
+    }
+    .chip  { transition: transform .35s var(--ease-out), box-shadow .3s var(--ease); }
+    .qbtn  { transition: filter .25s var(--ease), box-shadow .3s var(--ease), opacity .5s var(--ease-out); }
+    .layout { transition: opacity .3s var(--ease), transform .3s var(--ease); }
   </style>
 </head>
 <body>
+<script>try{if(localStorage.getItem('cw.theme')==='light')document.body.classList.add('light-mode')}catch(e){}</script>
 
 <header>
   <h1>⬡ Camelot Wheel <span class="pro-tag">Pro</span></h1>
-  <p class="subtitle">Harmonic Mixing Tool — click on a key</p>
+  <p class="subtitle">Harmonic Mixing Tool</p>
 </header>
 
-<div class="layout">
-  <canvas id="wheel" width="460" height="460"></canvas>
-  <div class="panel" id="panel"></div>
-</div>
+<!-- ── Controls row: Mode-Bar + Settings-Bar ───────── -->
+<div class="controls-row">
 
-<div class="toggle-row">
-  <span class="toggle-label">Key Names</span>
-  <label class="toggle-switch" title="Show / hide key names">
+<!-- Layout modes -->
+<div class="mode-bar" role="group" aria-label="Layout Mode">
+
+  <!-- Mode 1: Standard (all visible) -->
+  <button class="mode-btn active" data-mode="default" title="Default: Wheel · Panel · Quick-Select">
+    <svg viewBox="0 0 40 26" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="11" cy="13" r="8.5"/>
+      <rect x="24" y="5"  width="13" height="2.5" rx=".8" fill="currentColor" stroke="none" opacity=".8"/>
+      <rect x="24" y="10" width="13" height="2.5" rx=".8" fill="currentColor" stroke="none" opacity=".8"/>
+      <rect x="24" y="15" width="9"  height="2.5" rx=".8" fill="currentColor" stroke="none" opacity=".5"/>
+      <rect x="24" y="20" width="9"  height="2.5" rx=".8" fill="currentColor" stroke="none" opacity=".5"/>
+    </svg>
+  </button>
+
+  <div class="mode-sep"></div>
+
+  <!-- Mode 2: No panel — bigger wheel + Quick Select beside it -->
+  <button class="mode-btn" data-mode="no-panel" title="Large Wheel + Quick-Select (Panel hidden)">
+    <svg viewBox="0 0 40 26" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="13" cy="13" r="10.5"/>
+      <rect x="27" y="2"  width="5.5" height="5"   rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="34" y="2"  width="5.5" height="5"   rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="27" y="9"  width="5.5" height="5"   rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="34" y="9"  width="5.5" height="5"   rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="27" y="16" width="5.5" height="5"   rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="34" y="16" width="5.5" height="5"   rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+    </svg>
+  </button>
+
+  <div class="mode-sep"></div>
+
+  <!-- Mode 3: Wheel only — maximum size -->
+  <button class="mode-btn" data-mode="wheel-only" title="Wheel only (maximum view)">
+    <svg viewBox="0 0 40 26" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="13" r="11.5"/>
+      <!-- radial tick marks to suggest "wheel" -->
+      <line x1="20" y1="1.5"  x2="20" y2="4"  stroke-width="1.2" opacity=".5"/>
+      <line x1="20" y1="22"   x2="20" y2="24.5" stroke-width="1.2" opacity=".5"/>
+      <line x1="8.5" y1="13"  x2="11" y2="13"   stroke-width="1.2" opacity=".5"/>
+      <line x1="29"  y1="13"  x2="31.5" y2="13" stroke-width="1.2" opacity=".5"/>
+    </svg>
+  </button>
+
+  <div class="mode-sep"></div>
+
+  <!-- Mode 4: No wheel — Panel + Quick Select only -->
+  <button class="mode-btn" data-mode="no-wheel" title="Panel + Quick-Select (Wheel hidden)">
+    <svg viewBox="0 0 40 26" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1"  y="5"  width="11" height="2.5" rx=".8" fill="currentColor" stroke="none" opacity=".8"/>
+      <rect x="1"  y="10" width="11" height="2.5" rx=".8" fill="currentColor" stroke="none" opacity=".8"/>
+      <rect x="1"  y="15" width="8"  height="2.5" rx=".8" fill="currentColor" stroke="none" opacity=".5"/>
+      <rect x="1"  y="20" width="8"  height="2.5" rx=".8" fill="currentColor" stroke="none" opacity=".5"/>
+      <rect x="16" y="2"  width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="23" y="2"  width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="30" y="2"  width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="16" y="9"  width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="23" y="9"  width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="30" y="9"  width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="16" y="16" width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="23" y="16" width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+      <rect x="30" y="16" width="5"  height="4.5" rx="1" fill="currentColor" stroke="none" opacity=".65"/>
+    </svg>
+  </button>
+
+  <div class="mode-sep"></div>
+
+  <!-- Mode 5: Dual wheels — two independent wheels side by side -->
+  <button class="mode-btn" data-mode="dual" title="Dual Wheels: two independent wheels, each with its own match categories">
+    <svg viewBox="0 0 40 26" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="11" cy="13" r="8"/>
+      <circle cx="29" cy="13" r="8"/>
+      <circle cx="11" cy="13" r="2" fill="currentColor" stroke="none" opacity=".55"/>
+      <circle cx="29" cy="13" r="2" fill="currentColor" stroke="none" opacity=".55"/>
+    </svg>
+  </button>
+
+</div><!-- /mode-bar -->
+
+<!-- Quick Check mode -->
+<button class="qm-btn" id="qm-btn" title="Quick Check: pick two keys, get the match verdict (Q)">
+  <svg viewBox="0 0 12 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M7.4 0 1 9.3h3.9L3.8 16l7.2-9.4H6.8L7.4 0Z" fill="currentColor"/>
+  </svg>
+  Quick Check
+</button>
+
+<!-- Settings: KN toggle · Categories dropdown · Theme -->
+<div class="settings-bar">
+
+  <!-- Key Names -->
+  <span class="mode-kn-label" id="kn-label" title="Toggle Key Names">KN</span>
+  <label class="toggle-switch" title="Toggle Key Names">
     <input type="checkbox" id="kn-toggle">
     <div class="toggle-track"><div class="toggle-thumb"></div></div>
   </label>
-  <span class="toggle-off-label">Off</span>
-  <span class="toggle-on-label">On</span>
-  <button class="theme-btn" id="theme-toggle" title="Light / Dark Mode">☀</button>
+
+  <div class="mode-sep"></div>
+
+  <!-- Match categories dropdown trigger -->
+  <button class="sbar-btn" id="cat-btn" title="Match Categories">
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
+      <line x1="2" y1="5"  x2="16" y2="5"/>
+      <line x1="2" y1="9"  x2="16" y2="9"/>
+      <line x1="2" y1="13" x2="16" y2="13"/>
+      <circle cx="6"  cy="5"  r="1.8" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="9"  r="1.8" fill="currentColor" stroke="none"/>
+      <circle cx="7"  cy="13" r="1.8" fill="currentColor" stroke="none"/>
+    </svg>
+  </button>
+
+  <!-- Categories dropdown panel -->
+  <div class="cat-dropdown" id="catDropdown"></div>
+
+  <div class="mode-sep"></div>
+
+  <!-- Theme -->
+  <button class="theme-btn" id="theme-toggle" title="Light / Dark Mode">
+    <svg class="icon-sun" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <circle cx="9" cy="9" r="3.6"/>
+      <line x1="9" y1="1.4" x2="9" y2="3.3"/><line x1="9" y1="14.7" x2="9" y2="16.6"/>
+      <line x1="1.4" y1="9" x2="3.3" y2="9"/><line x1="14.7" y1="9" x2="16.6" y2="9"/>
+      <line x1="3.6" y1="3.6" x2="5" y2="5"/><line x1="13" y1="13" x2="14.4" y2="14.4"/>
+      <line x1="3.6" y1="14.4" x2="5" y2="13"/><line x1="13" y1="5" x2="14.4" y2="3.6"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+      <path d="M14.6 11.3A6.2 6.2 0 1 1 6.7 3.4a5 5 0 0 0 7.9 7.9Z"/>
+    </svg>
+  </button>
+
+  <div class="mode-sep"></div>
+
+  <!-- Info -->
+  <button class="sbar-btn" id="info-btn" title="About Camelot Wheel Pro" onclick="document.getElementById('infoModal').classList.add('open')">
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="9" cy="9" r="7.5"/>
+      <line x1="9" y1="8" x2="9" y2="13"/>
+      <circle cx="9" cy="5.5" r=".9" fill="currentColor" stroke="none"/>
+    </svg>
+  </button>
+
+</div><!-- /settings-bar -->
+
+</div><!-- /controls-row -->
+
+<div class="layout">
+  <div class="wheel-col">
+    <canvas id="wheel" width="460" height="460"></canvas>
+    <div class="wheel-legend" id="legendL"></div>
+  </div>
+  <div class="wheel-col wheel-col-r">
+    <canvas id="wheel2" width="460" height="460"></canvas>
+    <div class="wheel-legend" id="legendR"></div>
+  </div>
+  <div class="panel" id="panel"></div>
 </div>
 
-<div class="quick-wrap">
+<!-- Anchor: quick-wrap returns here when not inside .layout -->
+<div id="qw-anchor" style="display:none"></div>
+
+<div class="quick-wrap" id="quickWrap">
   <div class="quick-label">Quick Select</div>
   <div class="quick-grid" id="quickGrid"></div>
 </div>
@@ -477,23 +957,9 @@
   'use strict';
 
   // ── Wrap helper ───────────────────────────────────────────────────────
-  // Wraps n into 1–12 (handles any integer, positive or negative)
   function w(n) { return ((((n - 1) % 12) + 12) % 12) + 1; }
 
-  // ── Compatibility table (derived from Camelot Wheel mixing table) ─────
-  //
-  // A-ring formula (verified against table for 1A):
-  //   perfect  : [pos]A + [pos-1]B           → 1A: 1A, 12B ✓
-  //   boostLv1 : [pos]B + [pos+1]A           → 1A: 1B, 2A  ✓
-  //   boostLv2 : [pos-3]A                    → 1A: 10A      ✓
-  //   boostLv3 : [pos+2]A + [pos+7]A         → 1A: 3A, 8A  ✓
-  //   mood     : [pos+3]B (parallel major)   → 1A: 4B       ✓
-  //   dropLv1  : [pos-1]A                    → 1A: 12A
-  //   dropLv2  : [pos+3]A                    → 1A: 4A
-  //   dropLv3  : [pos-2]A + [pos-7]A         → 1A: 11A, 6A
-  //
-  // B-ring: mirrored (all +/- directions inverted, A↔B)
-
+  // ── Compatibility table ───────────────────────────────────────────────
   function getCompat(pos, letter) {
     if (letter === 'A') {
       return {
@@ -509,20 +975,55 @@
     } else {
       return {
         perfect  : [`${pos}B`,      `${w(pos+1)}A`],
-        boostLv1 : [`${w(pos+1)}B`],                          // only +1 same ring (Dur→Dur boost)
+        boostLv1 : [`${w(pos+1)}B`],
         boostLv2 : [`${w(pos-3)}B`],
         boostLv3 : [`${w(pos+2)}B`, `${w(pos+7)}B`],
         mood     : [`${w(pos-3)}A`],
-        dropLv1  : [`${pos}A`,       `${w(pos-1)}B`],         // cross-ring (Dur→Moll) + backward B
+        dropLv1  : [`${pos}A`,       `${w(pos-1)}B`],
         dropLv2  : [`${w(pos+3)}B`],
         dropLv3  : [`${w(pos-2)}B`,  `${w(pos-7)}B`],
       };
     }
   }
 
-  // Returns the state name for a given code, given current selection + compat
-  // Priority: selected > perfect > boost1 > boost2 > boost3 > mood > drop1 > drop2 > drop3 > dim
-  function stateOf(code, sel, compat) {
+  // ── Mixing Tips ───────────────────────────────────────────────────────
+  const MIX_TIPS = {
+    perfect:  { cat:'Perfect Match',  color:'#00e87d', body:'Same harmonic centre, opposite mode (major ↔ minor). The smoothest transition possible — energy stays constant, only the emotional colour shifts.' },
+    mood:     { cat:'Mood Change',    color:'#dc44c4', body:'Harmonically linked but emotionally distinct. Great for surprising pivots, section breaks, or switching the vibe without clashing.' },
+    boostLv1: { cat:'Boost Lv 1',    color:'#ffd060', body:'One step up the circle of fifths. The most natural energy lift in harmonic mixing — builds momentum and brightens the feel.' },
+    boostLv2: { cat:'Boost Lv 2',    color:'#ff9400', body:'Two steps up. A noticeable increase in brightness and drive. Good for a pre-drop push or escalating the energy mid-set.' },
+    boostLv3: { cat:'Boost Lv 3',    color:'#ff4400', body:'Maximum boost. A bold, dramatic leap forward — creates tension and anticipation. Use sparingly for climactic moments.' },
+    dropLv1:  { cat:'Drop Lv 1',     color:'#88c4ff', body:'One step down the circle. A gentle release of tension — perfect for a cool-down after a peak or easing into a deeper groove.' },
+    dropLv2:  { cat:'Drop Lv 2',     color:'#4d8aff', body:'Two steps down. Noticeably cooler and more relaxed — signals a new phase, a darker groove, or a change of direction.' },
+    dropLv3:  { cat:'Drop Lv 3',     color:'#2040f0', body:'Maximum energy drop. A powerful comedown — ideal for breaks, endings, or pivoting to a completely different vibe.' },
+  };
+
+  // Lazy tip helpers — #cwTip lives after this <script> tag in the DOM
+  function showTip(state, x, y) {
+    if (!tipsEnabled || TOUCH_ONLY) return;  // hover tips are meaningless on touch
+    const t  = MIX_TIPS[state];
+    const el = document.getElementById('cwTip');
+    if (!t || !el) return;
+    const catEl  = document.getElementById('cwTipCat');
+    const bodyEl = document.getElementById('cwTipBody');
+    catEl.textContent  = t.cat;
+    catEl.style.color  = t.color;
+    bodyEl.textContent = t.body;
+    const pad = 12, tw = 242, th = 86;
+    let lx = x + 14, ly = y + 18;
+    if (lx + tw > window.innerWidth  - pad) lx = x - tw - 10;
+    if (ly + th > window.innerHeight - pad) ly = y - th - 10;
+    el.style.left = lx + 'px';
+    el.style.top  = ly + 'px';
+    el.classList.add('tip-visible');
+  }
+
+  function hideTip() {
+    const el = document.getElementById('cwTip');
+    if (el) el.classList.remove('tip-visible');
+  }
+
+  function stateOf(code, sel, compat, dcats = disabledCats) {
     if (!sel) return 'default';
     if (code === sel) return 'selected';
     const checks = [
@@ -536,256 +1037,457 @@
       ['dropLv3',  compat.dropLv3],
     ];
     for (const [state, arr] of checks) {
-      if (arr.includes(code)) {
-        return disabledCats.has(state) ? 'dim' : state;
-      }
+      if (arr.includes(code)) return dcats.has(state) ? 'dim' : state;
     }
     return 'dim';
   }
 
-  // ── Key name lookup (Camelot code → musical key) ─────────────────────
-  const KEY_NAMES = {
-    '1A':'Am',   '1B':'C Maj',
-    '2A':'Em',   '2B':'G Maj',
-    '3A':'Bm',   '3B':'D Maj',
-    '4A':'F#m',  '4B':'A Maj',
-    '5A':'C#m',  '5B':'E Maj',
-    '6A':'G#m',  '6B':'B Maj',
-    '7A':'Ebm',  '7B':'F# Maj',
-    '8A':'Bbm',  '8B':'Db Maj',
-    '9A':'Fm',   '9B':'Ab Maj',
-    '10A':'Cm',  '10B':'Eb Maj',
-    '11A':'Gm',  '11B':'Bb Maj',
-    '12A':'Dm',  '12B':'F Maj',
+  const KEY_NAMES = {   // Camelot-Standard: 8A = Am, 8B = C Maj
+    '1A':'Abm', '1B':'B Maj',  '2A':'Ebm', '2B':'F# Maj', '3A':'Bbm', '3B':'Db Maj',
+    '4A':'Fm',  '4B':'Ab Maj', '5A':'Cm',  '5B':'Eb Maj', '6A':'Gm',  '6B':'Bb Maj',
+    '7A':'Dm',  '7B':'F Maj',  '8A':'Am',  '8B':'C Maj',  '9A':'Em',  '9B':'G Maj',
+    '10A':'Bm','10B':'D Maj', '11A':'F#m','11B':'A Maj', '12A':'Dbm','12B':'E Maj',
   };
 
-  // ── Canvas setup ─────────────────────────────────────────────────────
+  // ── Canvas / geometry (dynamic — updated by applySize) ────────────────
   const canvas = document.getElementById('wheel');
   const ctx    = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const CX = W / 2, CY = H / 2;
-  const R0 = 50, RA = 148, RB = 224;
-  const GAP  = 0.018;   // angular gap between segments (radians)
-  const RGAP = 2;       // radial gap between A ring and B ring (px each side)
+  const BASE   = 460;                       // base logical size (default mode)
+  const DPR    = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
 
-  let selected     = null;
-  let compat       = null;
-  let showKeyNames = false;
-  let lightMode    = false;   // dark mode by default
-  const disabledCats = new Set(['boostLv2', 'boostLv3', 'dropLv2', 'dropLv3']);  // default off
+  let W = BASE, H = BASE, CX = BASE/2, CY = BASE/2;
+  let R0 = 50, RA = 148, RB = 222, RGAP = 6, GAP_PX = 4;
 
-  // Canvas angle for the CENTER of position pos (0=right, clockwise)
-  function midAngle(pos) { return (pos * 30 - 90) * Math.PI / 180; }
+  const RING_WIDTH       = 2;
+  const RING_COLOR_DARK  = '#3a3a3f';
+  const RING_COLOR_LIGHT = '#d2d2d7';
 
-  // Hue for each position
-  const posHue = pos => ((pos - 1) * 30 + 180) % 360;
+  // Apply logical size and update canvas backing store + geometry constants
+  function applySize(newSize) {
+    W = newSize; H = newSize; CX = W/2; CY = H/2;
+    const f = newSize / BASE;
+    R0     = 50  * f;
+    RA     = 148 * f;
+    RB     = 222 * f;
+    RGAP   = 6   * f;
+    GAP_PX = 4   * f;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.width  = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
 
-  // ── Segment fill/stroke colors per state ─────────────────────────────
-  function segStyle(state, hue) {
-    switch (state) {
-      case 'selected': return {
-        fill:   '#00e87d',
-        stroke: lightMode ? '#000000' : '#ffffff',
-        text:   '#003a1a',
-        glow:   lightMode ? '#00e87d' : '#00ff90',
-        glowBlur: lightMode ? 28 : 22
-      };
-      case 'perfect': return {
-        fill:   lightMode ? '#00e87d'  : 'rgba(0,232,125,.28)',
-        stroke: lightMode ? '#ffffff'  : '#00e87d',
-        text:   lightMode ? '#ffffff'  : '#00e87d',
-        glow:   lightMode ? null : '#00e87d', glowBlur: 14
-      };
-      case 'boostLv1': return {
-        fill:   lightMode ? '#ffd060'  : 'rgba(255,208,96,.2)',
-        stroke: lightMode ? '#ffffff'  : '#ffd060',
-        text:   lightMode ? '#ffffff'  : '#ffd060',
-        glow:   lightMode ? null : '#ffd060', glowBlur: 10
-      };
-      case 'boostLv2': return {
-        fill:   lightMode ? '#ff9400'  : 'rgba(255,148,0,.2)',
-        stroke: lightMode ? '#ffffff'  : '#ff9400',
-        text:   lightMode ? '#ffffff'  : '#ff9400',
-        glow:   lightMode ? null : '#ff9400', glowBlur: 11
-      };
-      case 'boostLv3': return {
-        fill:   lightMode ? '#ff4000'  : 'rgba(255,56,0,.22)',
-        stroke: lightMode ? '#ffffff'  : '#ff4000',
-        text:   lightMode ? '#ffffff'  : '#ff5520',
-        glow:   lightMode ? null : '#ff4000', glowBlur: 14
-      };
-      case 'mood': return {
-        fill:   lightMode ? '#d040b8'  : 'rgba(208,64,184,.2)',
-        stroke: lightMode ? '#ffffff'  : '#d040b8',
-        text:   lightMode ? '#ffffff'  : '#d040b8',
-        glow:   lightMode ? null : '#d040b8', glowBlur: 12
-      };
-      case 'dropLv1': return {
-        fill:   lightMode ? '#88c4ff'  : 'rgba(136,196,255,.2)',
-        stroke: lightMode ? '#ffffff'  : '#88c4ff',
-        text:   lightMode ? '#ffffff'  : '#88c4ff',
-        glow:   lightMode ? null : '#88c4ff', glowBlur: 10
-      };
-      case 'dropLv2': return {
-        fill:   lightMode ? '#4d8aff'  : 'rgba(77,138,255,.2)',
-        stroke: lightMode ? '#ffffff'  : '#4d8aff',
-        text:   lightMode ? '#ffffff'  : '#4d8aff',
-        glow:   lightMode ? null : '#4d8aff', glowBlur: 11
-      };
-      case 'dropLv3': return {
-        fill:   lightMode ? '#1030dc'  : 'rgba(20,48,220,.22)',
-        stroke: lightMode ? '#ffffff'  : '#1030dc',
-        text:   lightMode ? '#ffffff'  : '#2045ee',
-        glow:   lightMode ? null : '#1030dc', glowBlur: 14
-      };
-      case 'dim': return lightMode ? {
-        fill:   `hsl(${hue},10%,95%)`,
-        stroke: 'rgba(0,0,60,.18)', text: 'rgba(0,0,50,.28)', glow: null, glowBlur: 0
-      } : {
-        fill:   `hsl(${hue},7%,11%)`,
-        stroke: '#050508', text: 'rgba(255,255,255,.11)', glow: null, glowBlur: 0
-      };
-      default: return {
-        fill:   null,  // computed in drawSeg — see lightMode branch there
-        stroke: lightMode ? 'rgba(70,70,140,.45)'  : '#06060c',
-        text:   lightMode ? 'rgba(5,5,40,.90)'     : 'rgba(255,255,255,.88)',
-        glow: null, glowBlur: 0
-      };
+  // ── Responsive sizing per mode ────────────────────────────────────────
+  const TOUCH_ONLY = window.matchMedia('(hover: none)').matches;
+
+  function availWidth() { return Math.max(260, window.innerWidth - 28); }
+
+  function calcSizeForMode(mode) {
+    switch (mode) {
+      case 'no-panel':   return Math.min(580, availWidth());
+      case 'wheel-only': return calcWheelOnlySize();
+      case 'dual': {
+        const half = Math.floor((window.innerWidth - 110) / 2);
+        return half >= 300 ? Math.min(BASE, half) : Math.min(BASE, availWidth());
+      }
+      default:           return Math.min(BASE, availWidth());
     }
   }
 
+  // Initial setup
+  applySize(Math.min(BASE, availWidth()));
+
+  let selected     = null;
+  let compat       = null;
+  let showKeyNames = (() => { try { return localStorage.getItem('cw.kn') === '1'; } catch (e) { return false; } })();
+  let lightMode    = document.body.classList.contains('light-mode');
+  let tipsEnabled  = false;   // Mixing Tips — off by default
+  const disabledCats = new Set(['boostLv2','boostLv3','dropLv2','dropLv3']);
+
+  function midAngle(pos) { return (pos * 30 - 90) * Math.PI / 180; }
+  const posHue = pos => ((pos - 1) * 30 + 180) % 360;
+
+  // ── Animation state ───────────────────────────────────────────────────
+  const segAnim    = {};
+  const centerAnim = { scale: 1, vel: 0 };
+  let   animTime   = 0;
+  let   rafId      = null;
+  let   rafTs      = 0;
+  const SPRING_K = 380, SPRING_D = 26;
+
+  function ensureAnim(code) {
+    if (!segAnim[code]) segAnim[code] = { scale:1, vel:0, glow:0, glowTarget:0, hover:0, hoverTarget:0 };
+    return segAnim[code];
+  }
+
+  function updateAnimTargets() {
+    for (let p = 1; p <= 12; p++) {
+      for (const L of ['A','B']) {
+        const code = `${p}${L}`;
+        const a    = ensureAnim(code);
+        if (quickMode) {
+          a.glowTarget = (code === qmA || code === qmB) ? 1.5 : 0;
+          continue;
+        }
+        const st   = selected ? stateOf(code, selected, compat) : 'default';
+        a.glowTarget = st === 'selected' ? 1.5 : (st === 'dim' || st === 'default') ? 0 : 1;
+      }
+    }
+  }
+
+  let hoveredCode = null;
+
+  function updateHoverTargets() {
+    for (let p = 1; p <= 12; p++) {
+      for (const L of ['A','B']) {
+        const code = `${p}${L}`;
+        const a    = ensureAnim(code);
+        a.hoverTarget = (code === hoveredCode) ? 1 : 0;
+      }
+    }
+  }
+
+  function triggerScale(code, peak) {
+    const a = ensureAnim(code); a.scale = peak; a.vel = 0;
+  }
+
+  function startRaf() {
+    if (rafId) return;
+    rafTs = performance.now();
+    rafId = requestAnimationFrame(rafTick);
+  }
+
+  function rafTick(ts) {
+    const dt = Math.min((ts - rafTs) / 1000, 0.05);
+    rafTs = ts; animTime += dt;
+    let needsMore = !!selected || (quickMode && !!qmA);
+
+    for (const code of Object.keys(segAnim)) {
+      const a = segAnim[code];
+      const f = -SPRING_K * (a.scale - 1.0) - SPRING_D * a.vel;
+      a.vel   += f * dt; a.scale += a.vel * dt;
+      a.glow  += (a.glowTarget - a.glow) * Math.min(dt * 10, 1);
+      a.hover += (a.hoverTarget - a.hover) * Math.min(dt * 14, 1);
+      if (Math.abs(a.scale-1)>0.001||Math.abs(a.vel)>0.005||Math.abs(a.glow-a.glowTarget)>0.01) needsMore=true;
+      if (Math.abs(a.hover-a.hoverTarget)>0.004) needsMore=true;
+    }
+
+    const fc = -SPRING_K * (centerAnim.scale - 1.0) - SPRING_D * centerAnim.vel;
+    centerAnim.vel   += fc * dt; centerAnim.scale += centerAnim.vel * dt;
+    if (Math.abs(centerAnim.scale-1)>0.001||Math.abs(centerAnim.vel)>0.005) needsMore=true;
+
+    // Quick-mode focus dim — smooth ease toward target
+    qmFocus.v += (qmFocus.target - qmFocus.v) * Math.min(dt * 6, 1);
+    if (Math.abs(qmFocus.v - qmFocus.target) > 0.01) needsMore = true;
+    else qmFocus.v = qmFocus.target;
+
+    draw();
+    rafId = needsMore ? requestAnimationFrame(rafTick) : null;
+  }
+
+  // ── Colors per state ──────────────────────────────────────────────────
+  // Dark mode uses vivid solid fills so matches glow like the selected key.
+  // Light mode colors are unchanged.
+  function segStyle(state, hue) {
+    if (!lightMode) {
+      // ── Dark mode ────────────────────────────────────────────────────
+      switch (state) {
+        case 'selected': return { fill:'#00e87d', stroke:'#fff',     text:'#003a1a', glow:'#00ff90', glowBlur:22 };
+        // Vivid, near-solid fills; text dark/white depending on brightness
+        case 'perfect':  return { fill:'rgba(0,228,122,.90)',  stroke:'#00e87d', text:'#001a08', glow:'#00e87d', glowBlur:20 };
+        case 'boostLv1': return { fill:'rgba(255,200,48,.88)', stroke:'#ffd060', text:'#252000', glow:'#ffd060', glowBlur:17 };
+        case 'boostLv2': return { fill:'rgba(255,138,0,.88)',  stroke:'#ff9400', text:'#251000', glow:'#ff9400', glowBlur:19 };
+        case 'boostLv3': return { fill:'rgba(255,50,0,.86)',   stroke:'#ff4400', text:'#fff',    glow:'#ff4400', glowBlur:21 };
+        case 'mood':     return { fill:'rgba(218,52,196,.86)', stroke:'#dc44c4', text:'#fff',    glow:'#dc44c4', glowBlur:19 };
+        case 'dropLv1':  return { fill:'rgba(126,194,255,.85)',stroke:'#88c4ff', text:'#001228', glow:'#88c4ff', glowBlur:17 };
+        case 'dropLv2':  return { fill:'rgba(56,120,255,.87)', stroke:'#4d8aff', text:'#fff',    glow:'#4d8aff', glowBlur:19 };
+        case 'dropLv3':  return { fill:'rgba(16,38,210,.88)',  stroke:'#2040f0', text:'#fff',    glow:'#1030ee', glowBlur:21 };
+        case 'clash':    return { fill:'rgba(255,32,72,.86)',  stroke:'#ff2848', text:'#fff',    glow:'#ff2848', glowBlur:20 };
+        case 'dim':      return { fill:`hsl(${hue},5%,9%)`,   stroke:'#060609', text:'rgba(255,255,255,.08)', glow:null, glowBlur:0 };
+        default:         return { fill:null, stroke:'rgba(0,0,0,.85)', text:'rgba(0,0,0,.90)', glow:null, glowBlur:0 };
+      }
+    }
+    // ── Light mode (unchanged) ────────────────────────────────────────
+    switch (state) {
+      case 'selected': return { fill:'#00e87d', stroke:'#000', text:'#003a1a', glow:'#00e87d', glowBlur:28 };
+      case 'perfect':  return { fill:'#00e87d', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'boostLv1': return { fill:'#ffd060', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'boostLv2': return { fill:'#ff9400', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'boostLv3': return { fill:'#ff4000', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'mood':     return { fill:'#d040b8', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'dropLv1':  return { fill:'#88c4ff', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'dropLv2':  return { fill:'#4d8aff', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'dropLv3':  return { fill:'#1030dc', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'clash':    return { fill:'#ff2848', stroke:'#fff', text:'#fff', glow:null, glowBlur:0 };
+      case 'dim':      return { fill:`hsl(${hue},10%,95%)`, stroke:'rgba(0,0,60,.18)', text:'rgba(0,0,50,.28)', glow:null, glowBlur:0 };
+      default:         return { fill:null, stroke:'rgba(70,70,140,.45)', text:'rgba(5,5,40,.90)', glow:null, glowBlur:0 };
+    }
+  }
+
+  // ── Draw one segment with spring animation ────────────────────────────
   function drawSeg(pos, isB, state) {
-    const r1  = isB ? RA + RGAP : R0;
-    const r2  = isB ? RB        : RA - RGAP;
-    const mid = midAngle(pos);
-    const sa  = mid - 15 * Math.PI / 180 + GAP;
-    const ea  = mid + 15 * Math.PI / 180 - GAP;
-    const hue = posHue(pos);
-    const s   = segStyle(state, hue);
+    const code = `${pos}${isB?'B':'A'}`;
+    const a    = segAnim[code];
+    const sc   = a ? a.scale : 1;
+    const gm   = a ? a.glow  : 0;
+    const hv   = a ? a.hover : 0;
+    const hue  = posHue(pos);
+    const s    = segStyle(state, hue);
+
+    const baseR1 = isB ? RA + RGAP : R0;
+    const baseR2 = isB ? RB        : RA - RGAP;
+    const mid    = midAngle(pos);
+    const alpha  = 15 * Math.PI / 180;
+
+    // Scale radially from segment centroid (hover adds a gentle +3.5% boost)
+    const rMid = (baseR1 + baseR2) / 2;
+    const halfW = (baseR2 - baseR1) / 2;
+    const eff  = sc + hv * 0.035;
+    const r1 = rMid - halfW * eff;
+    const r2 = rMid + halfW * eff;
+
+    // Parallel-sided pixel gap (adapts to scaled r1/r2)
+    const half   = GAP_PX / 2;
+    const aInner = Math.asin(Math.min(1, half / Math.max(1, r1)));
+    const aOuter = Math.asin(Math.min(1, half / Math.max(1, r2)));
+    const saOuter = mid - alpha + aOuter;
+    const eaOuter = mid + alpha - aOuter;
+    const saInner = mid - alpha + aInner;
+    const eaInner = mid + alpha - aInner;
 
     const fill = s.fill ?? (isB
-      ? (lightMode ? `hsl(${hue},76%,58%)` : `hsl(${hue},62%,36%)`)
-      : (lightMode ? `hsl(${hue},66%,68%)` : `hsl(${hue},50%,28%)`));
+      ? (lightMode ? `hsl(${hue},82%,55%)` : `hsl(${hue},96%,52%)`)
+      : (lightMode ? `hsl(${hue},82%,70%)` : `hsl(${hue},96%,72%)`));
 
-    if (s.glow) {
+    const hasGlow = s.glow && gm > 0.01;
+    if (hasGlow) {
       ctx.save();
       ctx.shadowColor = s.glow;
-      ctx.shadowBlur  = s.glowBlur;
+      const pulse = (state === 'selected') ? (0.82 + 0.32 * Math.sin(animTime * 3.4)) : 1;
+      ctx.shadowBlur  = s.glowBlur * gm * pulse;
     }
 
     ctx.beginPath();
-    ctx.arc(CX, CY, r2, sa, ea);
-    ctx.arc(CX, CY, r1, ea, sa, true);
+    ctx.arc(CX, CY, r2, saOuter, eaOuter);
+    ctx.arc(CX, CY, r1, eaInner, saInner, true);
     ctx.closePath();
     ctx.fillStyle   = fill;
     ctx.fill();
     ctx.strokeStyle = s.stroke;
-    ctx.lineWidth   = s.glow ? (lightMode ? 2.2 : 2) : (lightMode ? 1.6 : 1.2);
+    ctx.lineWidth   = hasGlow ? (lightMode?2.2:2) : (lightMode?1.6:1.2);
     ctx.stroke();
+    if (hasGlow) ctx.restore();
 
-    if (s.glow) ctx.restore();
+    // Hover overlay — subtle brightness lift
+    if (hv > 0.005) {
+      ctx.beginPath();
+      ctx.arc(CX, CY, r2, saOuter, eaOuter);
+      ctx.arc(CX, CY, r1, eaInner, saInner, true);
+      ctx.closePath();
+      ctx.fillStyle = lightMode
+        ? `rgba(0,0,0,${0.07 * hv})`
+        : `rgba(255,255,255,${0.10 * hv})`;
+      ctx.fill();
+    }
 
-    // Label
-    const r  = (r1 + r2) / 2;
-    const tx = CX + Math.cos(mid) * r;
-    const ty = CY + Math.sin(mid) * r;
-    const code = `${pos}${isB ? 'B' : 'A'}`;
+    // Label follows scaled centroid
+    const rText = (r1 + r2) / 2;
+    const tx = CX + Math.cos(mid) * rText;
+    const ty = CY + Math.sin(mid) * rText;
     ctx.save();
-    ctx.fillStyle    = s.text;
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = s.text; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if (showKeyNames) {
       const keyName = KEY_NAMES[code] || '';
       const offset  = isB ? 6 : 7;
-      ctx.font = `bold ${isB ? 11 : 10}px 'Segoe UI', Arial, sans-serif`;
+      ctx.font = `bold ${isB?11:10}px 'Helvetica Neue', Arial, sans-serif`;
       ctx.fillText(code, tx, ty - offset);
-      ctx.font = `${isB ? 9 : 8}px 'Segoe UI', Arial, sans-serif`;
+      ctx.font = `${isB?9:8}px 'Helvetica Neue', Arial, sans-serif`;
       ctx.fillStyle = state === 'selected' ? 'rgba(0,60,30,.85)' : s.text;
       ctx.fillText(keyName, tx, ty + offset);
     } else {
-      ctx.font = `bold ${isB ? 13 : 12}px 'Segoe UI', Arial, sans-serif`;
+      ctx.font = `bold ${isB?13:12}px 'Helvetica Neue', Arial, sans-serif`;
       ctx.fillText(code, tx, ty);
+    }
+    ctx.restore();
+
+    // Quick-mode soft focus: smoothly dim non-highlighted segments
+    if (quickMode && state === 'default' && qmFocus.v > 0.005) {
+      ctx.beginPath();
+      ctx.arc(CX, CY, r2, saOuter, eaOuter);
+      ctx.arc(CX, CY, r1, eaInner, saInner, true);
+      ctx.closePath();
+      ctx.fillStyle = lightMode
+        ? `rgba(245,245,247,${0.88 * qmFocus.v})`
+        : `rgba(0,0,0,${0.88 * qmFocus.v})`;
+      ctx.fill();
+    }
+
+    // Stage 1: dashed hint on segments that match the locked key
+    if (quickMode && qmA && !qmB && state === 'default' && qmMatches && qmMatches.has(code)) {
+      const da = Math.min(1, qmFocus.v / 0.45);   // fades in with the dim
+      if (da > 0.02) {
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = lightMode ? `rgba(0,0,0,${0.45 * da})` : `rgba(255,255,255,${0.65 * da})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(CX, CY, r2 - 1.5, saOuter, eaOuter);
+        ctx.arc(CX, CY, r1 + 1.5, eaInner, saInner, true);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  // ── Center disc with spring ───────────────────────────────────────────
+  function drawCenter() {
+    const sc = centerAnim.scale;
+    ctx.save();
+    ctx.translate(CX, CY); ctx.scale(sc, sc); ctx.translate(-CX, -CY);
+    ctx.beginPath();
+    ctx.arc(CX, CY, R0 - 6 * (W/BASE), 0, Math.PI * 2);
+    ctx.fillStyle   = lightMode ? '#f5f5f7' : '#000000';
+    ctx.fill();
+    ctx.strokeStyle = lightMode ? RING_COLOR_LIGHT : RING_COLOR_DARK;
+    ctx.lineWidth   = RING_WIDTH;
+    ctx.stroke();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (quickMode) {
+      if (qmA || qmB) {
+        ctx.fillStyle = lightMode ? '#1a1a3a' : '#fff';
+        ctx.font = `bold ${Math.round(12*(W/BASE))}px 'Helvetica Neue', Arial`;
+        ctx.fillText(`${qmA || '?'} → ${qmB || '?'}`, CX, CY);
+      } else {
+        ctx.fillStyle = lightMode ? '#86868b' : '#48484d';
+        ctx.font = `bold ${Math.round(9*(W/BASE))}px 'Helvetica Neue', Arial`;
+        ctx.fillText('QUICK', CX, CY - 7*(W/BASE));
+        ctx.fillText('CHECK', CX, CY + 7*(W/BASE));
+      }
+    } else if (selected) {
+      if (showKeyNames) {
+        ctx.fillStyle = lightMode ? '#1a1a3a' : '#ffffff';
+        ctx.font = `bold ${Math.round(15*(W/BASE))}px 'Helvetica Neue', Arial`;
+        ctx.fillText(selected, CX, CY - 9*(W/BASE));
+        ctx.fillStyle = lightMode ? 'rgba(60,60,120,.55)' : 'rgba(200,200,238,.65)';
+        ctx.font = `${Math.round(10*(W/BASE))}px 'Helvetica Neue', Arial`;
+        ctx.fillText(KEY_NAMES[selected] || '', CX, CY + 9*(W/BASE));
+      } else {
+        ctx.fillStyle = lightMode ? '#1a1a3a' : '#fff';
+        ctx.font = `bold ${Math.round(20*(W/BASE))}px 'Helvetica Neue', Arial`;
+        ctx.fillText(selected, CX, CY);
+      }
+    } else {
+      ctx.fillStyle = lightMode ? '#86868b' : '#48484d';
+      ctx.font = `bold ${Math.round(9*(W/BASE))}px 'Helvetica Neue', Arial`;
+      ctx.fillText('CAMELOT', CX, CY - 7*(W/BASE));
+      ctx.fillText('WHEEL',   CX, CY + 7*(W/BASE));
     }
     ctx.restore();
   }
 
-  function drawCenter() {
+  function drawRing(radius) {
     ctx.beginPath();
-    ctx.arc(CX, CY, R0 - 3, 0, Math.PI * 2);
-    ctx.fillStyle   = lightMode ? '#f8f8fc' : '#08080e';
-    ctx.fill();
-    ctx.strokeStyle = lightMode ? '#d0d0e8' : '#1c1c38';
-    ctx.lineWidth   = 1.5;
+    ctx.arc(CX, CY, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = lightMode ? RING_COLOR_LIGHT : RING_COLOR_DARK;
+    ctx.lineWidth   = RING_WIDTH;
     ctx.stroke();
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
-    if (selected) {
-      if (showKeyNames) {
-        ctx.fillStyle = lightMode ? '#1a1a3a' : '#ffffff';
-        ctx.font      = `bold 15px 'Segoe UI', Arial`;
-        ctx.fillText(selected, CX, CY - 9);
-        ctx.fillStyle = lightMode ? 'rgba(60,60,120,.55)' : 'rgba(200,200,238,.65)';
-        ctx.font      = `10px 'Segoe UI', Arial`;
-        ctx.fillText(KEY_NAMES[selected] || '', CX, CY + 9);
-      } else {
-        ctx.fillStyle = lightMode ? '#1a1a3a' : '#fff';
-        ctx.font      = `bold 20px 'Segoe UI', Arial`;
-        ctx.fillText(selected, CX, CY);
-      }
-    } else {
-      ctx.fillStyle = lightMode ? '#a0a0c0' : '#333355';
-      ctx.font      = `bold 9px 'Segoe UI', Arial`;
-      ctx.fillText('CAMELOT', CX, CY - 7);
-      ctx.fillText('WHEEL',   CX, CY + 7);
-    }
   }
 
   function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, W, H);
+    const qmCat = (quickMode && qmA && qmB) ? (quickResult(qmA, qmB) || 'clash') : null;
     for (let pos = 1; pos <= 12; pos++) {
       const cA = `${pos}A`, cB = `${pos}B`;
-      const sA = selected ? stateOf(cA, selected, compat) : 'default';
-      const sB = selected ? stateOf(cB, selected, compat) : 'default';
+      const sA = quickMode ? qmStateOf(cA, qmCat) : (selected ? stateOf(cA, selected, compat) : 'default');
+      const sB = quickMode ? qmStateOf(cB, qmCat) : (selected ? stateOf(cB, selected, compat) : 'default');
       drawSeg(pos, false, sA);
       drawSeg(pos, true,  sB);
     }
+    drawRing(RA);
+    drawRing(RB + 5 * (W/BASE));
     drawCenter();
   }
 
-  // ── Click handling ────────────────────────────────────────────────────
-  canvas.addEventListener('click', e => {
+  // ── Shared hit-test helper ────────────────────────────────────────────
+  function hitSegment(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    const mx   = (e.clientX - rect.left) * (W / rect.width);
-    const my   = (e.clientY - rect.top)  * (H / rect.height);
+    const mx   = (clientX - rect.left) * (W / rect.width);
+    const my   = (clientY - rect.top)  * (H / rect.height);
     const dx   = mx - CX, dy = my - CY;
     const dist = Math.hypot(dx, dy);
-
-    if (dist < R0 || dist > RB) {
-      if (dist < R0) select(null);
-      return;
-    }
-
-    const isB   = dist >= RA;
-    const letter = isB ? 'B' : 'A';
-
-    let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    if (dist < R0 || dist > RB) return null;
+    const isB  = dist >= RA;
+    let angle  = Math.atan2(dy, dx) * 180 / Math.PI;
     if (angle < 0) angle += 360;
     const norm = (angle + 90) % 360;
     let pos = Math.floor((norm + 15) / 30) % 12;
     if (pos === 0) pos = 12;
+    return `${pos}${isB?'B':'A'}`;
+  }
 
-    const code = `${pos}${letter}`;
+  // ── Click handling ────────────────────────────────────────────────────
+  canvas.addEventListener('click', e => {
+    const code = hitSegment(e.clientX, e.clientY);
+    if (quickMode) { if (code) quickPick(code); return; }
+    if (code === null) { select(null); return; }
     select(code === selected ? null : code);
   });
 
+  // ── Hover handling ────────────────────────────────────────────────────
+  canvas.addEventListener('mousemove', e => {
+    const code = hitSegment(e.clientX, e.clientY);
+    if (code !== hoveredCode) {
+      hoveredCode = code;
+      canvas.style.cursor = code ? 'pointer' : 'default';
+      updateHoverTargets();
+      startRaf();
+    }
+    // Tooltip: show for compatible segments only
+    if (selected && code && code !== selected) {
+      const st = stateOf(code, selected, compat);
+      if (MIX_TIPS[st]) { showTip(st, e.clientX, e.clientY); }
+      else hideTip();
+    } else {
+      hideTip();
+    }
+  });
+  canvas.addEventListener('mouseleave', () => {
+    if (hoveredCode !== null) {
+      hoveredCode = null;
+      canvas.style.cursor = 'default';
+      updateHoverTargets();
+      startRaf();
+    }
+    hideTip();
+  });
+
+  // ── Select ────────────────────────────────────────────────────────────
   function select(code) {
+    if (quickMode) { if (code) quickPick(code); return; }
     if (!code) {
-      selected = null;
-      compat   = null;
+      selected = null; compat = null;
+      centerAnim.scale = 0.88; centerAnim.vel = 0;
     } else {
       selected = code;
       compat   = getCompat(parseInt(code), code.slice(-1));
+      centerAnim.scale = 1.22; centerAnim.vel = 0;
+      triggerScale(code, 1.16);
+
+      const catPeak = { perfect:1.09,mood:1.07,boostLv1:1.06,dropLv1:1.06,boostLv2:1.05,dropLv2:1.05,boostLv3:1.04,dropLv3:1.04 };
+      for (const [cat, codes] of Object.entries(compat)) {
+        if (!disabledCats.has(cat)) {
+          const peak = catPeak[cat] || 1.05;
+          codes.forEach(c => { if (c !== code) triggerScale(c, peak); });
+        }
+      }
+
     }
+    updateAnimTargets();
+    updateHoverTargets();
+    startRaf();
     draw();
     updatePanel();
     updateQuick();
@@ -793,159 +1495,202 @@
 
   // ── Panel ─────────────────────────────────────────────────────────────
   const CAT_META = [
-    { key: 'perfect',  label: 'Perfect Match',  color: 'var(--perfect)' },
-    { key: 'mood',     label: 'Mood Change',     color: 'var(--mood)'    },
-    { key: 'boostLv1', label: 'Boost Lv1 (mild)',color: 'var(--b1)'      },
-    { key: 'dropLv1',  label: 'Drop Lv1 (mild)', color: 'var(--d1)'      },
-    { key: 'boostLv2', label: 'Boost Lv2',       color: 'var(--b2)'      },
-    { key: 'dropLv2',  label: 'Drop Lv2',        color: 'var(--d2)'      },
-    { key: 'boostLv3', label: 'Boost Lv3 (max)', color: 'var(--b3)'      },
-    { key: 'dropLv3',  label: 'Drop Lv3 (max)',  color: 'var(--d3)'      },
+    { key:'perfect',  label:'Perfect Match',  color:'var(--perfect)' },
+    { key:'mood',     label:'Mood Change',     color:'var(--mood)'    },
+    { key:'boostLv1', label:'Boost Lv1 (mild)',color:'var(--b1)'      },
+    { key:'dropLv1',  label:'Drop Lv1 (mild)', color:'var(--d1)'      },
+    { key:'boostLv2', label:'Boost Lv2',       color:'var(--b2)'      },
+    { key:'dropLv2',  label:'Drop Lv2',        color:'var(--d2)'      },
+    { key:'boostLv3', label:'Boost Lv3 (max)', color:'var(--b3)'      },
+    { key:'dropLv3',  label:'Drop Lv3 (max)',  color:'var(--d3)'      },
   ];
 
   function buildLegendHTML() {
-    const items = CAT_META.map(({ key, label, color }) => {
-      const off  = disabledCats.has(key);
-      const dotBg = off ? '#1e1e32' : color;
-      return `<div class="leg-item${off ? ' leg-off' : ''}" style="--tc:${color}"
-                   onclick="__cw.toggleCat('${key}')">
-        <div class="leg-dot" style="background:${dotBg}"></div>
-        ${label}
-        <div class="leg-mini-pill"></div>
-      </div>`;
-    }).join('');
-    return `<div class="legend">${items}</div>`;
+    return `<div class="legend">${CAT_META.map(({ key, label, color }) => {
+      const off = disabledCats.has(key);
+      return `<div class="leg-item${off?' leg-off':''}" style="--tc:${color}" onclick="__cw.toggleCat('${key}')">
+        <div class="leg-dot" style="background:${off?'#232327':color}"></div>${label}
+        <div class="leg-mini-pill"></div></div>`;
+    }).join('')}</div>`;
   }
 
-  function chipRow(codes, cls, off = false) {
-    return codes.map(k =>
-      `<div class="chip ${cls}${off ? ' chip-off' : ''}" ${off ? '' : `onclick="__cw.select('${k}')"`}>${k}</div>`
-    ).join('');
-  }
+  // cls → camelCase state key mapping for tips
+  const CLS_TO_STATE = {
+    perfect:'perfect', mood:'mood',
+    boost1:'boostLv1', boost2:'boostLv2', boost3:'boostLv3',
+    drop1:'dropLv1',   drop2:'dropLv2',   drop3:'dropLv3',
+  };
 
-  function levelRow(lvLabel, codes, cls, off = false) {
-    return `
-      <div class="sublevel${off ? ' sublevel-off' : ''}">
-        <span class="lv-tag">${lvLabel}</span>
-        <div class="chips">${chipRow(codes, cls, off)}</div>
-      </div>`;
+  function chipRow(codes, cls, off=false) {
+    const cat = CLS_TO_STATE[cls] || '';
+    return codes.map(k=>`<div class="chip ${cls}${off?' chip-off':''}" data-cat="${cat}" ${off?'':
+      `onclick="__cw.select('${k}')"`}>${k}</div>`).join('');
+  }
+  function levelRow(lv, codes, cls, off=false) {
+    return `<div class="sublevel${off?' sublevel-off':''}">
+      <span class="lv-tag">${lv}</span>
+      <div class="chips">${chipRow(codes,cls,off)}</div></div>`;
   }
 
   function updatePanel() {
     const panel = document.getElementById('panel');
+    if (quickMode) { renderQuickPanel(panel); return; }
     if (!selected) {
+      panel.innerHTML = `<div class="empty-state"><div class="empty-icon">
+        <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+          <!-- outer segmented ring (12 segments) -->
+          <circle cx="36" cy="36" r="26" stroke="currentColor" stroke-width="9"
+                  stroke-dasharray="11.013 2.6" stroke-dashoffset="5.5" opacity=".28"/>
+          <!-- inner segmented ring -->
+          <circle cx="36" cy="36" r="14.5" stroke="currentColor" stroke-width="7"
+                  stroke-dasharray="5.69 1.9" stroke-dashoffset="2.83" opacity=".16"/>
+          <!-- center disc -->
+          <circle cx="36" cy="36" r="6.5" stroke="currentColor" stroke-width="1.5" opacity=".35"/>
+          <!-- highlighted segment (top) -->
+          <path class="ei-seg" d="M 29.27 10.89 A 26 26 0 0 1 42.73 10.89"
+                stroke="var(--perfect)" stroke-width="9"/>
+          <!-- tap indicator on lower-right segment -->
+          <g transform="translate(54.4 54.4)">
+            <circle class="ei-ripple" r="10.5" stroke="var(--accent)" stroke-width="1.8"/>
+            <circle r="3.4" fill="var(--accent)"/>
+          </g>
+        </svg></div>
+        <span>Click on a key<br>in the Wheel or Quick Select</span></div>${buildLegendHTML()}`;
+    } else {
+      const pOff=disabledCats.has('perfect'),mOff=disabledCats.has('mood');
+      const b1Off=disabledCats.has('boostLv1'),b2Off=disabledCats.has('boostLv2'),b3Off=disabledCats.has('boostLv3');
+      const d1Off=disabledCats.has('dropLv1'), d2Off=disabledCats.has('dropLv2'), d3Off=disabledCats.has('dropLv3');
       panel.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🎛️</div>
-          <span>Click on a key<br>in the Wheel or Quick Select</span>
-        </div>
-        ${buildLegendHTML()}`;
-      return;
+        <div class="sel-header"><div class="sel-code">${selected}</div></div>
+        <div class="cats-grid">
+          <div class="cat">
+            <div class="cat-head" style="color:var(--perfect);${pOff?'opacity:.28;filter:grayscale(1)':''}">✓ Perfect Match</div>
+            <div class="sublevel${pOff?' sublevel-off':''}"><span class="lv-tag"></span>
+              <div class="chips">${chipRow(compat.perfect,'perfect',pOff)}</div></div></div>
+          <div class="cat">
+            <div class="cat-head" style="color:var(--mood);${mOff?'opacity:.28;filter:grayscale(1)':''}">⇄ Mood Change</div>
+            <div class="sublevel${mOff?' sublevel-off':''}"><span class="lv-tag"></span>
+              <div class="chips">${chipRow(compat.mood,'mood',mOff)}</div></div></div>
+          <div class="cat">
+            <div class="cat-head" style="color:var(--b2)">↑ Energy Boost</div>
+            ${levelRow('Lv1',compat.boostLv1,'boost1',b1Off)}
+            ${levelRow('Lv2',compat.boostLv2,'boost2',b2Off)}
+            ${levelRow('Lv3',compat.boostLv3,'boost3',b3Off)}</div>
+          <div class="cat">
+            <div class="cat-head" style="color:var(--d2)">↓ Energy Drop</div>
+            ${levelRow('Lv1',compat.dropLv1,'drop1',d1Off)}
+            ${levelRow('Lv2',compat.dropLv2,'drop2',d2Off)}
+            ${levelRow('Lv3',compat.dropLv3,'drop3',d3Off)}</div>
+        </div>${buildLegendHTML()}`;
     }
+    animatePanel();
+  }
 
-    const pOff  = disabledCats.has('perfect');
-    const b1Off = disabledCats.has('boostLv1');
-    const b2Off = disabledCats.has('boostLv2');
-    const b3Off = disabledCats.has('boostLv3');
-    const mOff  = disabledCats.has('mood');
-    const d1Off = disabledCats.has('dropLv1');
-    const d2Off = disabledCats.has('dropLv2');
-    const d3Off = disabledCats.has('dropLv3');
-
-    panel.innerHTML = `
-      <div class="sel-header">
-        <div class="sel-code">${selected}</div>
-      </div>
-
-      <div class="cat">
-        <div class="cat-head" style="color:var(--perfect);${pOff ? 'opacity:.28;filter:grayscale(1)' : ''}">✓ Perfect Match</div>
-        <div class="sublevel${pOff ? ' sublevel-off' : ''}">
-          <span class="lv-tag"></span>
-          <div class="chips">${chipRow(compat.perfect, 'perfect', pOff)}</div>
-        </div>
-      </div>
-
-      <div class="cat">
-        <div class="cat-head" style="color:var(--b2)">↑ Energy Boost</div>
-        ${levelRow('Lv1', compat.boostLv1, 'boost1', b1Off)}
-        ${levelRow('Lv2', compat.boostLv2, 'boost2', b2Off)}
-        ${levelRow('Lv3', compat.boostLv3, 'boost3', b3Off)}
-      </div>
-
-      <div class="cat">
-        <div class="cat-head" style="color:var(--mood);${mOff ? 'opacity:.28;filter:grayscale(1)' : ''}">⇄ Mood Change</div>
-        <div class="sublevel${mOff ? ' sublevel-off' : ''}">
-          <span class="lv-tag"></span>
-          <div class="chips">${chipRow(compat.mood, 'mood', mOff)}</div>
-        </div>
-      </div>
-
-      <div class="cat">
-        <div class="cat-head" style="color:var(--d2)">↓ Energy Drop</div>
-        ${levelRow('Lv1', compat.dropLv1, 'drop1', d1Off)}
-        ${levelRow('Lv2', compat.dropLv2, 'drop2', d2Off)}
-        ${levelRow('Lv3', compat.dropLv3, 'drop3', d3Off)}
-      </div>
-
-      ${buildLegendHTML()}`;
+  function animatePanel() {
+    const panel = document.getElementById('panel');
+    const emptyState = panel.querySelector('.empty-state');
+    if (emptyState) emptyState.style.animation = 'empty-in .32s cubic-bezier(.25,.46,.45,.94) both';
+    const selCode = panel.querySelector('.sel-code');
+    if (selCode) selCode.style.animation = 'sel-bounce .40s cubic-bezier(.34,1.56,.64,1) both';
+    panel.querySelectorAll('.cat').forEach((cat, i) => {
+      const d = i * 38;
+      cat.style.animation = `cat-slide .24s cubic-bezier(.25,.46,.45,.94) ${d}ms both`;
+      cat.querySelectorAll('.chip:not(.chip-off)').forEach((chip, j) => {
+        chip.style.animation = `chip-pop .30s cubic-bezier(.34,1.56,.64,1) ${d+22+j*22}ms both`;
+      });
+    });
   }
 
   // ── Quick grid ────────────────────────────────────────────────────────
+  // Helper: is a mode one of the side modes?
+  function isSideMode(m) { return m === 'no-panel' || m === 'no-wheel'; }
+
+  // ── Default grid: 12 columns, each col = pos-num + B + A ─────────────
   function buildQuickGrid() {
     const grid = document.getElementById('quickGrid');
     let html = '';
     for (let pos = 1; pos <= 12; pos++) {
-      const hue = posHue(pos);
-      // Match exactly the wheel segment fill colors
-      const bBg  = lightMode ? `hsl(${hue},76%,58%)` : `hsl(${hue},62%,36%)`;
-      const bBrd = lightMode ? `hsl(${hue},72%,42%)` : `hsl(${hue},65%,48%)`;
-      const bClr = lightMode ? `hsl(${hue},72%,13%)` : `hsl(${hue},80%,82%)`;
-      const aBg  = lightMode ? `hsl(${hue},66%,68%)` : `hsl(${hue},50%,28%)`;
-      const aBrd = lightMode ? `hsl(${hue},62%,50%)` : `hsl(${hue},52%,40%)`;
-      const aClr = lightMode ? `hsl(${hue},62%,15%)` : `hsl(${hue},70%,76%)`;
+      const hue  = posHue(pos);
+      const bBg  = lightMode ? `hsl(${hue},82%,55%)` : `hsl(${hue},96%,52%)`;
+      const bBrd = lightMode ? `hsl(${hue},78%,42%)` : `hsl(${hue},92%,42%)`;
+      const bClr = lightMode ? `hsl(${hue},78%,12%)` : `hsl(${hue},80%,10%)`;
+      const aBg  = lightMode ? `hsl(${hue},82%,70%)` : `hsl(${hue},96%,72%)`;
+      const aBrd = lightMode ? `hsl(${hue},74%,50%)` : `hsl(${hue},88%,55%)`;
+      const aClr = lightMode ? `hsl(${hue},70%,14%)` : `hsl(${hue},70%,14%)`;
       html += `<div class="qkey">
         <div class="pos-num">${pos}</div>
-        <div class="qbtn" id="qb-${pos}B" onclick="__cw.select('${pos}B')"
-          style="background:${bBg}; border-color:${bBrd}; color:${bClr};">
-          ${pos}B</div>
-        <div class="qbtn" id="qb-${pos}A" onclick="__cw.select('${pos}A')"
-          style="background:${aBg}; border-color:${aBrd}; color:${aClr};">
-          ${pos}A</div>
+        <div class="qbtn" id="qb-${pos}B" onclick="__cw.toggle('${pos}B')"
+          style="background:${bBg};border-color:${bBrd};color:${bClr};">${pos}B</div>
+        <div class="qbtn" id="qb-${pos}A" onclick="__cw.toggle('${pos}A')"
+          style="background:${aBg};border-color:${aBrd};color:${aClr};">${pos}A</div>
       </div>`;
     }
     grid.innerHTML = html;
   }
 
-  const STATE_TO_QCLASS = {
-    perfect:  'q-perfect',
-    boostLv1: 'q-boost1', boostLv2: 'q-boost2', boostLv3: 'q-boost3',
-    mood:     'q-mood',
-    dropLv1:  'q-drop1',  dropLv2:  'q-drop2',  dropLv3:  'q-drop3',
-  };
+  // ── Side grid: row 1 = all B keys (1–12), row 2 = all A keys (1–12) ──
+  function buildSideGrid() {
+    const grid = document.getElementById('quickGrid');
+    let html = '';
+    for (const L of ['B', 'A']) {
+      for (let pos = 1; pos <= 12; pos++) {
+        const hue = posHue(pos);
+        const bg  = L === 'B'
+          ? (lightMode ? `hsl(${hue},82%,55%)` : `hsl(${hue},96%,52%)`)
+          : (lightMode ? `hsl(${hue},82%,70%)` : `hsl(${hue},96%,72%)`);
+        const brd = L === 'B'
+          ? (lightMode ? `hsl(${hue},78%,42%)` : `hsl(${hue},92%,42%)`)
+          : (lightMode ? `hsl(${hue},74%,50%)` : `hsl(${hue},88%,55%)`);
+        const clr = L === 'B'
+          ? (lightMode ? `hsl(${hue},78%,12%)` : `hsl(${hue},80%,10%)`)
+          : (lightMode ? `hsl(${hue},70%,14%)` : `hsl(${hue},70%,14%)`);
+        html += `<div class="qbtn" id="qb-${pos}${L}" onclick="__cw.toggle('${pos}${L}')"
+          style="background:${bg};border-color:${brd};color:${clr};">${pos}${L}</div>`;
+      }
+    }
+    grid.innerHTML = html;
+  }
 
   function updateQuick() {
     const allBtns = document.querySelectorAll('.qbtn');
     allBtns.forEach(el => {
-      el.classList.remove('ql-dim', 'q-sel',
-        'q-perfect', 'q-boost1', 'q-boost2', 'q-boost3',
-        'q-mood',
-        'q-drop1', 'q-drop2', 'q-drop3');
+      el.classList.remove('ql-dim','q-soft','q-soft2','q-match','q-sel','q-clash','q-perfect','q-boost1','q-boost2','q-boost3','q-mood','q-drop1','q-drop2','q-drop3');
+      el.style.animation = '';
     });
+    if (quickMode) {
+      if (!qmA) return;
+      // two-stage dim: light after the first key, deep once both are set
+      const softCls = qmB ? 'q-soft2' : 'q-soft';
+      allBtns.forEach(el => el.classList.add(softCls));
+      // stage 1: dashed hint on every key that would match the locked key
+      if (!qmB && qmMatches) {
+        qmMatches.forEach(c => {
+          const el = document.getElementById(`qb-${c}`);
+          if (el) el.classList.add('q-match');
+        });
+      }
+      mark(qmA, 'q-sel', '');
+      if (qmB) {
+        const cat = quickResult(qmA, qmB);
+        mark(qmB, cat ? QM_QCLS[cat] : 'q-clash', cat || '');
+      }
+      return;
+    }
     if (!selected) return;
-
-    // Dim everything first
     allBtns.forEach(el => el.classList.add('ql-dim'));
 
-    function mark(code, cls) {
+    function mark(code, cls, cat) {
       const el = document.getElementById(`qb-${code}`);
-      if (el) { el.classList.remove('ql-dim'); el.classList.add(cls); }
+      if (!el) return;
+      el.classList.remove('ql-dim','q-soft','q-soft2','q-match'); el.classList.add(cls);
+      el.dataset.cat = cat || '';
+      el.style.animation = 'none'; void el.offsetWidth;
+      el.style.animation = `qbtn-pop .36s cubic-bezier(.34,1.56,.64,1) both`;
     }
-
     function markCat(cat, codes, cls) {
-      if (!disabledCats.has(cat)) codes.forEach(c => { if (c !== selected) mark(c, cls); });
+      if (!disabledCats.has(cat)) codes.forEach(c => { if (c !== selected) mark(c, cls, cat); });
     }
-
-    mark(selected, 'q-sel');
+    mark(selected, 'q-sel', '');
     markCat('perfect',  compat.perfect,  'q-perfect');
     markCat('boostLv1', compat.boostLv1, 'q-boost1');
     markCat('boostLv2', compat.boostLv2, 'q-boost2');
@@ -958,63 +1703,962 @@
 
   // ── Category toggle ───────────────────────────────────────────────────
   function toggleCat(cat) {
-    if (disabledCats.has(cat)) disabledCats.delete(cat);
-    else disabledCats.add(cat);
-    draw();
-    updatePanel();
-    updateQuick();
+    if (disabledCats.has(cat)) {
+      disabledCats.delete(cat);
+      if (selected && compat && compat[cat]) {
+        compat[cat].forEach(c => { if (c !== selected) triggerScale(c, 1.07); });
+      }
+    } else {
+      disabledCats.add(cat);
+    }
+    updateAnimTargets(); startRaf();
+    draw(); updatePanel(); updateQuick();
+    updateCatDropdown();
   }
+
+  // ── Categories dropdown ───────────────────────────────────────────────
+  function toggleTips() {
+    tipsEnabled = !tipsEnabled;
+    if (!tipsEnabled) hideTip();
+    // update the tips row in the dropdown
+    const row = document.getElementById('tipToggleRow');
+    if (row) row.classList.toggle('cat-off', !tipsEnabled);
+  }
+
+  function buildCatDropdown() {
+    const el = document.getElementById('catDropdown');
+    const tipColor = 'rgba(180,180,220,.7)';
+    el.innerHTML =
+      CAT_META.map(({ key, label, color }) => `
+        <div class="cat-drop-row${disabledCats.has(key)?' cat-off':''}"
+             onclick="__cw.toggleCat('${key}')"
+             style="--cc:${color}">
+          <div class="cat-drop-dot"  style="background:${color}"></div>
+          <span class="cat-drop-name">${label}</span>
+          <div class="cat-drop-pill" style="border-color:${color};color:${color}"></div>
+        </div>`).join('')
+      + `<div class="cat-drop-divider"></div>
+         <div class="cat-drop-row cat-drop-full${tipsEnabled?'':' cat-off'}"
+              id="tipToggleRow"
+              onclick="__cw.toggleTips()"
+              style="--cc:${tipColor}">
+           <div class="cat-drop-dot" style="background:${tipColor};border-radius:50%"></div>
+           <span class="cat-drop-name">Mixing Tips on hover</span>
+           <div class="cat-drop-pill" style="border-color:${tipColor};color:${tipColor}"></div>
+         </div>`;
+  }
+
+  function updateCatDropdown() {
+    document.querySelectorAll('.cat-drop-row[onclick*="toggleCat"]').forEach(row => {
+      const cat = row.getAttribute('onclick').match(/'([^']+)'/)[1];
+      row.classList.toggle('cat-off', disabledCats.has(cat));
+    });
+    const row = document.getElementById('tipToggleRow');
+    if (row) row.classList.toggle('cat-off', !tipsEnabled);
+  }
+
+  // Dropdown open / close
+  const catBtn      = document.getElementById('cat-btn');
+  const catDropdown = document.getElementById('catDropdown');
+
+  catBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = catDropdown.classList.toggle('open');
+    catBtn.classList.toggle('sbar-active', open);
+    if (open) buildCatDropdown();
+  });
+  document.addEventListener('click', e => {
+    if (!catDropdown.contains(e.target) && e.target !== catBtn) {
+      catDropdown.classList.remove('open');
+      catBtn.classList.remove('sbar-active');
+    }
+  });
 
   // ── Theme toggle ──────────────────────────────────────────────────────
   function toggleTheme() {
     lightMode = !lightMode;
     document.body.classList.toggle('light-mode', lightMode);
-    document.getElementById('theme-toggle').textContent = lightMode ? '🌙' : '☀';
-    buildQuickGrid();
-    draw();
-    updatePanel();
-    updateQuick();
+    try { localStorage.setItem('cw.theme', lightMode ? 'light' : 'dark'); } catch (e) {}
+    isSideMode(currentMode) ? buildSideGrid() : buildQuickGrid();
+    draw(); wheel2.draw(); updatePanel(); updateQuick();
   }
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
 
-  // ── Tonarten toggle ───────────────────────────────────────────────────
   document.getElementById('kn-toggle').addEventListener('change', e => {
     showKeyNames = e.target.checked;
-    draw();
+    try { localStorage.setItem('cw.kn', showKeyNames ? '1' : '0'); } catch (e) {}
+    document.getElementById('kn-label').classList.toggle('kn-on', showKeyNames);
+    draw(); wheel2.draw();
+  });
+  // KN label click toggles the checkbox
+  document.getElementById('kn-label').addEventListener('click', () => {
+    const cb = document.getElementById('kn-toggle');
+    cb.checked = !cb.checked;
+    cb.dispatchEvent(new Event('change'));
   });
 
+  // ══════════════════════════════════════════════════════════════════════
+  // LAYOUT MODE SWITCHING
+  // ══════════════════════════════════════════════════════════════════════
+  let currentMode = 'default';
+
+  const layoutDiv = document.querySelector('.layout');
+  const quickWrap = document.getElementById('quickWrap');
+  const qwAnchor  = document.getElementById('qw-anchor');
+  const panelEl   = document.getElementById('panel');
+
+  // Compute the largest square that fits the viewport for wheel-only mode
+  function calcWheelOnlySize() {
+    const vw = window.innerWidth  - 28;
+    const vh = window.innerHeight - 190; // header + mode-bar + padding
+    return Math.min(760, Math.max(280, Math.min(vw, vh)));
+  }
+
+  // Dual view: the left wheel runs on its own category set while the
+  // global header settings are parked — and restored on leaving dual.
+  let dualCatsL = new Set(['boostLv2','boostLv3','dropLv2','dropLv3']);
+  let dualSavedCats = null;
+
+  // Apply a layout mode instantly (no fade) — shared by setMode & Quick Check
+  function applyMode(mode) {
+    const wasMode = currentMode;
+
+    if (mode === 'dual' && wasMode !== 'dual') {
+      dualSavedCats = new Set(disabledCats);                    // park globals
+      disabledCats.clear(); dualCatsL.forEach(c => disabledCats.add(c));
+      catDropdown.classList.remove('open'); catBtn.classList.remove('sbar-active');
+      updateAnimTargets(); startRaf();
+    } else if (wasMode === 'dual' && mode !== 'dual') {
+      dualCatsL = new Set(disabledCats);                        // keep dual choices
+      disabledCats.clear();
+      (dualSavedCats || []).forEach(c => disabledCats.add(c));  // restore globals
+      updateAnimTargets(); startRaf();
+    }
+
+    document.body.classList.remove(`mode-${wasMode}`);
+    currentMode = mode;
+
+    // Reposition quick-wrap
+    quickWrap.remove();
+    if (isSideMode(mode)) layoutDiv.appendChild(quickWrap);
+    else qwAnchor.parentNode.insertBefore(quickWrap, qwAnchor.nextSibling);
+
+    // Rebuild grid when crossing side ↔ default boundary
+    if (isSideMode(mode) && !isSideMode(wasMode)) buildSideGrid();
+    else if (!isSideMode(mode) && isSideMode(wasMode)) buildQuickGrid();
+
+    applySize(calcSizeForMode(mode));
+    if (mode === 'dual') {
+      wheel2.applySize(calcSizeForMode('dual'));
+      wheel2.draw();
+      buildDualLegends();
+    }
+    document.body.classList.add(`mode-${mode}`);
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+  }
+
+  // Focus-style view transition (fade + slight zoom) — shared by
+  // layout-mode switching and Quick Check, so every view change feels the same.
+  function focusFade(out) {
+    [layoutDiv, quickWrap].forEach(el => {
+      el.style.transition = 'opacity .22s ease, transform .22s ease';
+      el.style.transform  = out ? 'scale(.965)' : 'scale(1)';
+      el.style.opacity    = out ? '0' : '1';
+    });
+  }
+
+  function setMode(mode) {
+    if (mode === currentMode || quickMode) return;
+    focusFade(true);
+    setTimeout(() => {
+      applyMode(mode);
+      draw(); updatePanel(); updateQuick();
+      focusFade(false);
+    }, 230);
+  }
+
+  // Attach mode button listeners
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => setMode(btn.dataset.mode));
+  });
+
+  // Handle resize / orientation change in every mode (debounced)
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const s = calcSizeForMode(currentMode);
+      if (s !== W) {
+        applySize(s); draw();
+        if (currentMode === 'dual') { wheel2.applySize(s); wheel2.draw(); }
+      }
+    }, 120);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════
+  // QUICK CHECK MODE — pick two keys, get the match verdict
+  // ══════════════════════════════════════════════════════════════════════
+  let quickMode = false, qmA = null, qmB = null;
+  let qmPrevMode = 'default', qmPrevSelected = null;
+
+  const QM_CLASH = {
+    cat: 'Clash', color: '#ff2848',
+    body: 'No harmonic relationship between these keys. Mixing them will most likely sound dissonant — consider a key shift or a different track.'
+  };
+  const QM_ICON = { perfect:'✓', mood:'⇄', boostLv1:'↑', boostLv2:'↑', boostLv3:'↑', dropLv1:'↓', dropLv2:'↓', dropLv3:'↓' };
+  const QM_QCLS = { perfect:'q-perfect', boostLv1:'q-boost1', boostLv2:'q-boost2', boostLv3:'q-boost3', mood:'q-mood', dropLv1:'q-drop1', dropLv2:'q-drop2', dropLv3:'q-drop3' };
+
+  // Which category links a → b? All categories count — filters are ignored.
+  function quickResult(a, b) {
+    const c = getCompat(parseInt(a), a.slice(-1));
+    for (const [cat, codes] of Object.entries(c)) if (codes.includes(b)) return cat;
+    return null;
+  }
+
+  // Animated focus dim (0 = none, 1 = full) — eased in rafTick
+  const qmFocus = { v: 0, target: 0 };
+  function qmUpdateFocus() {
+    qmFocus.target = !quickMode ? 0 : (qmB ? 0.82 : (qmA ? 0.45 : 0));
+  }
+
+  // Cached set of every key that matches the locked first key (any category)
+  let qmMatches = null;
+  function qmRefreshMatches() {
+    if (!qmA) { qmMatches = null; return; }
+    const c = getCompat(parseInt(qmA), qmA.slice(-1));
+    qmMatches = new Set();
+    for (const codes of Object.values(c)) codes.forEach(k => qmMatches.add(k));
+    qmMatches.delete(qmA);
+  }
+
+  function qmStateOf(code, qmCat) {
+    if (code === qmA) return 'selected';
+    if (code === qmB) return qmCat || 'clash';
+    return 'default';   // dimming is handled smoothly via qmFocus overlay
+  }
+
+  function quickPick(code) {
+    // First key is sticky: only clicking it again (or Reset) clears it.
+    // Any other click sets/replaces the second key — ideal for match hunting.
+    if (code === qmA)      { qmA = null; qmB = null; }
+    else if (code === qmB) { qmB = null; }
+    else if (!qmA)         { qmA = code; }
+    else                   { qmB = code; }
+    qmRefreshMatches();
+    if (qmA) triggerScale(qmA, 1.14);
+    if (qmB) triggerScale(qmB, 1.14);
+    centerAnim.scale = 1.18; centerAnim.vel = 0;
+    qmUpdateFocus();
+    updateAnimTargets(); updateHoverTargets(); startRaf();
+    draw(); updatePanel(); updateQuick();
+  }
+
+  function qmSwap() {
+    if (!qmA || !qmB) return;
+    [qmA, qmB] = [qmB, qmA];
+    qmRefreshMatches();
+    triggerScale(qmA, 1.08); triggerScale(qmB, 1.08); startRaf();
+    draw(); updatePanel(); updateQuick();
+  }
+
+  function qmReset() {
+    qmA = qmB = null;
+    qmUpdateFocus(); qmRefreshMatches();
+    updateAnimTargets(); startRaf();
+    draw(); updatePanel(); updateQuick();
+  }
+
+  function renderQuickPanel(panel) {
+    const cat  = (qmA && qmB) ? quickResult(qmA, qmB) : undefined;
+    const meta = (qmA && qmB) ? (cat ? MIX_TIPS[cat] : QM_CLASH) : null;
+
+    const keyBox = (c, color) => c
+      ? `<div class="qm-key" style="border-color:${color};box-shadow:0 0 18px ${color}40">${c}${showKeyNames ? `<small>${KEY_NAMES[c]||''}</small>` : ''}</div>`
+      : `<div class="qm-key qm-key-empty">?</div>`;
+
+    let result;
+    if (!qmA)      result = `<div class="qm-hint">Pick the <strong>first key</strong> on the wheel or in&nbsp;Quick&nbsp;Select.</div>`;
+    else if (!qmB) result = `<div class="qm-hint">Now pick the <strong>second key</strong> to check the&nbsp;match.</div>`;
+    else result = `<div class="qm-verdict" style="--vc:${meta.color}">
+        <div class="qm-verdict-name">${cat ? QM_ICON[cat] : '✕'} ${meta.cat}</div>
+        <div class="qm-verdict-body">${meta.body}</div></div>
+      <div class="qm-note">${qmA} stays locked — pick any other key to keep comparing, or tap ${qmA} / Reset to clear.</div>`;
+
+    panel.innerHTML = `
+      <div class="qm-card">
+        <div class="qm-title">Quick Check<span class="qm-sub">all match categories active</span></div>
+        <div class="qm-keys">
+          ${keyBox(qmA, '#00e87d')}
+          <button class="qm-swap" onclick="__cw.qmSwap()" title="Swap direction" ${qmA && qmB ? '' : 'disabled'}>⇄</button>
+          ${keyBox(qmB, meta ? meta.color : 'var(--border)')}
+        </div>
+        ${result}
+        <button class="qm-reset" onclick="__cw.qmReset()" title="Reset (R or Esc)" ${qmA ? '' : 'disabled'}>Reset</button>
+      </div>`;
+  }
+
+  function setQuickMode(on) {
+    if (on === quickMode) return;
+    const btn = document.getElementById('qm-btn');
+
+    // Focus-style transition: fade + slight zoom
+    focusFade(true);
+
+    setTimeout(() => {
+      if (on) {
+        qmPrevSelected = selected; qmPrevMode = currentMode;
+        selected = null; compat = null; qmA = qmB = null;
+        if (currentMode !== 'default') applyMode('default');
+        quickMode = true;
+        document.body.classList.add('quick-mode');
+        btn.classList.add('qm-active');
+        document.querySelector('.subtitle').textContent = 'Quick Check — pick two keys, get the verdict';
+      } else {
+        quickMode = false; qmA = qmB = null;
+        document.body.classList.remove('quick-mode');
+        btn.classList.remove('qm-active');
+        document.querySelector('.subtitle').textContent = 'Harmonic Mixing Tool';
+        if (qmPrevMode !== currentMode) applyMode(qmPrevMode);
+        selected = qmPrevSelected;
+        compat   = selected ? getCompat(parseInt(selected), selected.slice(-1)) : null;
+      }
+      qmUpdateFocus(); qmRefreshMatches();
+      updateAnimTargets(); updateHoverTargets(); startRaf();
+      draw(); updatePanel(); updateQuick();
+      focusFade(false);
+    }, 230);
+  }
+
+  document.getElementById('qm-btn').addEventListener('click', () => setQuickMode(!quickMode));
+
+  // ── Keyboard shortcut: R or Esc resets the wheel ──────────────────────
+  // (Cmd+R / Ctrl+R is reserved for page reload in every browser)
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    // Q toggles Quick Check mode
+    if (e.key === 'q' || e.key === 'Q') { setQuickMode(!quickMode); return; }
+
+    if (e.key === 'Escape') {
+      // Esc closes open overlays first, then resets
+      const modal = document.getElementById('infoModal');
+      if (modal && modal.classList.contains('open')) { modal.classList.remove('open'); return; }
+      if (catDropdown.classList.contains('open')) {
+        catDropdown.classList.remove('open');
+        catBtn.classList.remove('sbar-active');
+        return;
+      }
+    }
+    if (e.key === 'r' || e.key === 'R' || e.key === 'Escape') {
+      if (quickMode) { if (qmA || qmB) qmReset(); }
+      else {
+        if (selected) select(null);
+        if (currentMode === 'dual') wheel2.deselect();
+      }
+    }
+  });
+
+  // ══════════════════════════════════════════════════════════════════════
+  // DUAL VIEW — independent second wheel with its own category settings
+  // ══════════════════════════════════════════════════════════════════════
+  const wheel2 = (() => {
+    const cv = document.getElementById('wheel2');
+    const c2 = cv.getContext('2d');
+    let W2 = BASE, CX2 = BASE/2, CY2 = BASE/2;
+    let r0 = 50, ra = 148, rb = 222, rgap = 6, gpx = 4;
+    let sel = null, cmp = null, hov = null;
+    const dcats = new Set(['boostLv2','boostLv3','dropLv2','dropLv3']);
+    const anim = {}; const cAnim = { scale: 1, vel: 0 };
+    let raf = null, ts = 0, t = 0;
+
+    function applySize(s) {
+      W2 = s; CX2 = s/2; CY2 = s/2;
+      const f = s / BASE;
+      r0 = 50*f; ra = 148*f; rb = 222*f; rgap = 6*f; gpx = 4*f;
+      cv.style.width = s+'px'; cv.style.height = s+'px';
+      cv.width = Math.round(s*DPR); cv.height = Math.round(s*DPR);
+      c2.setTransform(DPR,0,0,DPR,0,0);
+    }
+    applySize(BASE);
+
+    const ens = code => anim[code] || (anim[code] = { scale:1, vel:0, glow:0, glowTarget:0, hover:0, hoverTarget:0 });
+
+    function targets() {
+      for (let p = 1; p <= 12; p++) for (const L of ['A','B']) {
+        const code = `${p}${L}`, a = ens(code);
+        const st = sel ? stateOf(code, sel, cmp, dcats) : 'default';
+        a.glowTarget  = st === 'selected' ? 1.5 : (st === 'dim' || st === 'default') ? 0 : 1;
+        a.hoverTarget = (code === hov) ? 1 : 0;
+      }
+    }
+    function kick() { if (!raf) { ts = performance.now(); raf = requestAnimationFrame(tick); } }
+    function tick(now) {
+      const dt = Math.min((now - ts)/1000, .05); ts = now; t += dt;
+      let more = !!sel;
+      for (const k of Object.keys(anim)) {
+        const a = anim[k];
+        const f = -SPRING_K*(a.scale-1) - SPRING_D*a.vel;
+        a.vel += f*dt; a.scale += a.vel*dt;
+        a.glow  += (a.glowTarget - a.glow)  * Math.min(dt*10, 1);
+        a.hover += (a.hoverTarget - a.hover) * Math.min(dt*14, 1);
+        if (Math.abs(a.scale-1)>.001 || Math.abs(a.vel)>.005 || Math.abs(a.glow-a.glowTarget)>.01 || Math.abs(a.hover-a.hoverTarget)>.004) more = true;
+      }
+      const fc = -SPRING_K*(cAnim.scale-1) - SPRING_D*cAnim.vel;
+      cAnim.vel += fc*dt; cAnim.scale += cAnim.vel*dt;
+      if (Math.abs(cAnim.scale-1)>.001 || Math.abs(cAnim.vel)>.005) more = true;
+      draw2();
+      raf = more ? requestAnimationFrame(tick) : null;
+    }
+
+    function seg(pos, isB, state) {
+      const code = `${pos}${isB?'B':'A'}`;
+      const a = anim[code]; const sc = a?a.scale:1, gm = a?a.glow:0, hv = a?a.hover:0;
+      const hue = posHue(pos); const s = segStyle(state, hue);
+      const b1 = isB ? ra+rgap : r0, b2 = isB ? rb : ra-rgap;
+      const mid = midAngle(pos), alpha = 15*Math.PI/180;
+      const rm = (b1+b2)/2, hw = (b2-b1)/2, eff = sc + hv*.035;
+      const r1 = rm - hw*eff, r2 = rm + hw*eff;
+      const half = gpx/2;
+      const aI = Math.asin(Math.min(1, half/Math.max(1,r1)));
+      const aO = Math.asin(Math.min(1, half/Math.max(1,r2)));
+      const saO = mid-alpha+aO, eaO = mid+alpha-aO, saI = mid-alpha+aI, eaI = mid+alpha-aI;
+      const fill = s.fill ?? (isB
+        ? (lightMode ? `hsl(${hue},82%,55%)` : `hsl(${hue},96%,52%)`)
+        : (lightMode ? `hsl(${hue},82%,70%)` : `hsl(${hue},96%,72%)`));
+      const hasGlow = s.glow && gm > .01;
+      if (hasGlow) {
+        c2.save(); c2.shadowColor = s.glow;
+        const pulse = state === 'selected' ? (0.82 + 0.32*Math.sin(t*3.4)) : 1;
+        c2.shadowBlur = s.glowBlur * gm * pulse;
+      }
+      c2.beginPath();
+      c2.arc(CX2, CY2, r2, saO, eaO);
+      c2.arc(CX2, CY2, r1, eaI, saI, true);
+      c2.closePath();
+      c2.fillStyle = fill; c2.fill();
+      c2.strokeStyle = s.stroke;
+      c2.lineWidth = hasGlow ? (lightMode?2.2:2) : (lightMode?1.6:1.2);
+      c2.stroke();
+      if (hasGlow) c2.restore();
+      if (hv > .005) {
+        c2.beginPath(); c2.arc(CX2,CY2,r2,saO,eaO); c2.arc(CX2,CY2,r1,eaI,saI,true); c2.closePath();
+        c2.fillStyle = lightMode ? `rgba(0,0,0,${.07*hv})` : `rgba(255,255,255,${.10*hv})`;
+        c2.fill();
+      }
+      const rT = (r1+r2)/2, tx = CX2+Math.cos(mid)*rT, ty = CY2+Math.sin(mid)*rT;
+      c2.save();
+      c2.fillStyle = s.text; c2.textAlign = 'center'; c2.textBaseline = 'middle';
+      if (showKeyNames) {
+        const kn = KEY_NAMES[code]||'', off = isB?6:7;
+        c2.font = `bold ${isB?11:10}px 'Helvetica Neue', Arial, sans-serif`;
+        c2.fillText(code, tx, ty-off);
+        c2.font = `${isB?9:8}px 'Helvetica Neue', Arial, sans-serif`;
+        c2.fillStyle = state === 'selected' ? 'rgba(0,60,30,.85)' : s.text;
+        c2.fillText(kn, tx, ty+off);
+      } else {
+        c2.font = `bold ${isB?13:12}px 'Helvetica Neue', Arial, sans-serif`;
+        c2.fillText(code, tx, ty);
+      }
+      c2.restore();
+    }
+
+    function center() {
+      const sc = cAnim.scale;
+      c2.save();
+      c2.translate(CX2,CY2); c2.scale(sc,sc); c2.translate(-CX2,-CY2);
+      c2.beginPath(); c2.arc(CX2, CY2, r0 - 6*(W2/BASE), 0, Math.PI*2);
+      c2.fillStyle = lightMode ? '#f5f5f7' : '#000000';
+      c2.fill();
+      c2.strokeStyle = lightMode ? RING_COLOR_LIGHT : RING_COLOR_DARK;
+      c2.lineWidth = RING_WIDTH; c2.stroke();
+      c2.textAlign = 'center'; c2.textBaseline = 'middle';
+      if (sel) {
+        c2.fillStyle = lightMode ? '#1a1a3a' : '#fff';
+        c2.font = `bold ${Math.round(20*(W2/BASE))}px 'Helvetica Neue', Arial`;
+        c2.fillText(sel, CX2, CY2);
+      } else {
+        c2.fillStyle = lightMode ? '#86868b' : '#48484d';
+        c2.font = `bold ${Math.round(9*(W2/BASE))}px 'Helvetica Neue', Arial`;
+        c2.fillText('CAMELOT', CX2, CY2 - 7*(W2/BASE));
+        c2.fillText('WHEEL',   CX2, CY2 + 7*(W2/BASE));
+      }
+      c2.restore();
+    }
+
+    function ring(r) {
+      c2.beginPath(); c2.arc(CX2, CY2, r, 0, Math.PI*2);
+      c2.strokeStyle = lightMode ? RING_COLOR_LIGHT : RING_COLOR_DARK;
+      c2.lineWidth = RING_WIDTH; c2.stroke();
+    }
+
+    function draw2() {
+      c2.setTransform(DPR,0,0,DPR,0,0);
+      c2.clearRect(0, 0, W2, W2);
+      for (let p = 1; p <= 12; p++) {
+        seg(p, false, sel ? stateOf(`${p}A`, sel, cmp, dcats) : 'default');
+        seg(p, true,  sel ? stateOf(`${p}B`, sel, cmp, dcats) : 'default');
+      }
+      ring(ra); ring(rb + 5*(W2/BASE)); center();
+    }
+
+    function hit(x, y) {
+      const r = cv.getBoundingClientRect();
+      const mx = (x-r.left)*(W2/r.width), my = (y-r.top)*(W2/r.height);
+      const dx = mx-CX2, dy = my-CY2, d = Math.hypot(dx, dy);
+      if (d < r0 || d > rb) return null;
+      const isB = d >= ra;
+      let ang = Math.atan2(dy, dx)*180/Math.PI; if (ang < 0) ang += 360;
+      let pos = Math.floor(((ang+90)%360 + 15)/30) % 12; if (pos === 0) pos = 12;
+      return `${pos}${isB?'B':'A'}`;
+    }
+
+    cv.addEventListener('click', e => {
+      const code = hit(e.clientX, e.clientY);
+      sel = (code && code !== sel) ? code : null;
+      cmp = sel ? getCompat(parseInt(sel), sel.slice(-1)) : null;
+      cAnim.scale = sel ? 1.22 : 0.88; cAnim.vel = 0;
+      if (sel) {
+        const a = ens(sel); a.scale = 1.16; a.vel = 0;
+        for (const [cat, codes] of Object.entries(cmp)) if (!dcats.has(cat))
+          codes.forEach(k => { if (k !== sel) { const b = ens(k); b.scale = 1.07; b.vel = 0; } });
+      }
+      targets(); kick(); draw2();
+    });
+    cv.addEventListener('mousemove', e => {
+      const code = hit(e.clientX, e.clientY);
+      if (code !== hov) { hov = code; cv.style.cursor = code ? 'pointer' : 'default'; targets(); kick(); }
+      // Mixing tips on hover (uses this wheel's own category set)
+      if (sel && code && code !== sel) {
+        const st = stateOf(code, sel, cmp, dcats);
+        if (MIX_TIPS[st]) { showTip(st, e.clientX, e.clientY); return; }
+      }
+      hideTip();
+    });
+    cv.addEventListener('mouseleave', () => {
+      if (hov) { hov = null; cv.style.cursor = 'default'; targets(); kick(); }
+      hideTip();
+    });
+
+    function toggleCat(cat) {
+      dcats.has(cat) ? dcats.delete(cat) : dcats.add(cat);
+      if (sel && cmp && cmp[cat] && !dcats.has(cat))
+        cmp[cat].forEach(k => { if (k !== sel) { const b = ens(k); b.scale = 1.07; b.vel = 0; } });
+      targets(); kick(); draw2();
+      buildDualLegends();
+    }
+
+    function deselect() {
+      if (!sel) return;
+      sel = null; cmp = null;
+      cAnim.scale = 0.88; cAnim.vel = 0;
+      targets(); kick(); draw2();
+    }
+
+    return { applySize, draw: draw2, toggleCat, deselect, dcats };
+  })();
+
+  // Category legends under both wheels (dual view)
+  function buildDualLegends() {
+    const mk = (dcats, fn) => CAT_META.map(({ key, label, color }) => {
+      const off = dcats.has(key);
+      return `<div class="leg-item${off?' leg-off':''}" style="--tc:${color}" onclick="__cw.${fn}('${key}')">
+        <div class="leg-dot" style="background:${off?'#232327':color}"></div>${label}
+        <div class="leg-mini-pill"></div></div>`;
+    }).join('');
+    const tipColor = 'rgba(180,180,220,.7)';
+    const tipsRow = `<div class="leg-item${tipsEnabled?'':' leg-off'}" style="--tc:${tipColor};grid-column:1 / -1" onclick="__cw.toggleTipsDual()">
+      <div class="leg-dot" style="background:${tipsEnabled?tipColor:'#232327'};border-radius:50%"></div>Mixing Tips on hover
+      <div class="leg-mini-pill"></div></div>`;
+    const L = document.getElementById('legendL'), R = document.getElementById('legendR');
+    if (L) L.innerHTML = mk(disabledCats, 'toggleCatL') + tipsRow;
+    if (R) R.innerHTML = mk(wheel2.dcats, 'toggleCatR') + tipsRow;
+  }
+  function toggleTipsDual() { toggleTips(); buildDualLegends(); }
+  // left wheel shares the global category set; refresh its legend after toggling
+  function toggleCatL(cat) { toggleCat(cat); buildDualLegends(); }
+
   // ── Global API ────────────────────────────────────────────────────────
-  window.__cw = { select, toggleCat };
+  // toggle: deselects if code is already selected, otherwise selects
+  const toggle = code => quickMode ? quickPick(code) : select(code === selected ? null : code);
+  window.__cw = { select, toggle, toggleCat, toggleTips, qmSwap, qmReset, toggleCatL, toggleTipsDual, toggleCatR: wheel2.toggleCat };
+
+  // ── Tip delegation: Quick-Select grid & Panel chips ───────────────────
+  // Single document-level mousemove — canvas has its own handler above.
+  document.addEventListener('mousemove', e => {
+    if (e.target === canvas || e.target.id === 'wheel2') return; // canvas handlers manage the wheels
+    const btn = e.target.closest('.qbtn, .chip');
+    if (btn) {
+      const cat = btn.dataset.cat;
+      if (cat && MIX_TIPS[cat]) { showTip(cat, e.clientX, e.clientY); return; }
+    }
+    hideTip();
+  });
 
   // ── Init ──────────────────────────────────────────────────────────────
   buildQuickGrid();
   draw();
   updatePanel();
 
+  // ── Gespeicherte Einstellungen in die Bedienelemente übernehmen ──────
+  if (showKeyNames) {
+    document.getElementById('kn-toggle').checked = true;
+    document.getElementById('kn-label').classList.add('kn-on');
+  }
+
 })();
 </script>
-<footer style="
-  width: 100%;
-  text-align: center;
-  padding: 18px 0 10px;
-  font-size: 0.6rem;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  opacity: 0.5;
-  user-select: none;
-">Design by Michael Neuner</footer>
+
+<footer style="width:100%;text-align:center;padding:14px 0 8px;font-size:.6rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);opacity:.5;user-select:none;">© <span class="cw-year"></span> mnmedia.app</footer>
+
+<!-- ── Mixing Tip Tooltip ────────────────────────────────────────── -->
+<div id="cwTip">
+  <div class="tip-cat" id="cwTipCat"></div>
+  <div class="tip-body" id="cwTipBody"></div>
+</div>
+
+<!-- ── Info Modal ──────────────────────────────────────────────── -->
+<style>
+  /* Overlay */
+  #infoModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: rgba(0,0,0,.5);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  #infoModal.open { display: flex; }
+
+  /* Card */
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 28px 30px 24px;
+    position: relative;
+    box-shadow: 0 24px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04);
+    color: var(--text);
+    font-size: .85rem;
+    line-height: 1.6;
+    scrollbar-width: thin;
+  }
+  body.light-mode .info-card {
+    box-shadow: 0 12px 50px rgba(0,0,0,.18);
+  }
+
+  .info-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 4px 9px 5px;
+    transition: color .15s, border-color .15s;
+  }
+  .info-close:hover { color: var(--text); border-color: var(--accent); }
+
+  .info-card h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 4px;
+  }
+  .info-card .info-sub {
+    font-size: .72rem;
+    color: var(--muted);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .info-card h3 {
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 26px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  body.light-mode .info-card h3 { border-bottom-color: rgba(0,0,0,.10); }
+  .info-card p { margin: 0 0 10px; color: var(--text); opacity: .88; }
+
+  /* Category rows — roomy cards with a colored edge per category */
+  .info-cat-list { display: flex; flex-direction: column; gap: 9px; }
+  .info-cat-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 13px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cc, var(--border));
+    border-radius: 10px;
+  }
+  body.light-mode .info-cat-row { background: rgba(0,0,80,.025); }
+  .info-cat-dot {
+    flex-shrink: 0;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    margin-top: 4px;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .info-cat-row .info-cat-name {
+    font-weight: 700;
+    min-width: 108px;
+    color: var(--text);
+    font-size: .84rem;
+    letter-spacing: .02em;
+  }
+  .info-cat-row .info-cat-desc {
+    color: var(--text);
+    opacity: .82;
+    font-size: .8rem;
+    line-height: 1.55;
+  }
+
+  /* How-to tips (unordered — use them independently, in any order) */
+  .info-steps { display: flex; flex-direction: column; gap: 9px; }
+  .info-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .info-step-dot {
+    flex-shrink: 0;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-top: 6px;
+    background: var(--perfect);
+    box-shadow: 0 0 8px rgba(0,232,125,.55);
+  }
+  .info-step p { margin: 0; font-size: .81rem; color: var(--text); opacity: .85; line-height: 1.5; }
+
+  /* Gold emphasis — matches the "Pro" in the logo */
+  .gold-em {
+    background: linear-gradient(95deg, #ff9500, #ffcc33);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: #ffb300; font-weight: 700;
+  }
+  body.light-mode .gold-em {
+    background: linear-gradient(95deg, #d97d00, #e6a700);
+    -webkit-background-clip: text; background-clip: text;
+  }
+
+  /* Quick Check feature card */
+  .info-qc {
+    padding: 15px 17px;
+    background: rgba(255,200,60,.05);
+    border: 1px solid rgba(255,200,60,.22);
+    border-radius: 12px;
+  }
+  body.light-mode .info-qc {
+    background: rgba(255,200,60,.08);
+    border-color: rgba(180,130,0,.28);
+  }
+  .info-qc-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .76rem; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: #ffb300;
+    margin-bottom: 9px;
+  }
+  .info-qc-head svg { width: 10px; height: 14px; flex-shrink: 0; }
+  body.light-mode .info-qc-head { color: #c08800; text-shadow: none; }
+  .info-qc p { font-size: .81rem; margin: 0 0 9px; line-height: 1.55; }
+  .info-qc p:last-child { margin-bottom: 0; }
+  .info-qc kbd {
+    display: inline-block; padding: 1px 7px; border-radius: 5px;
+    border: 1px solid var(--border); background: rgba(255,255,255,.05);
+    font-family: inherit; font-size: .72rem; font-weight: 700; color: var(--text);
+  }
+  body.light-mode .info-qc kbd { background: rgba(0,0,80,.05); }
+
+  /* Shortcuts section */
+  .info-keys { display: flex; flex-direction: column; gap: 9px; }
+  .info-key-row { display: flex; align-items: baseline; gap: 12px; }
+  .info-key-row kbd {
+    display: inline-block; min-width: 38px; text-align: center;
+    padding: 2px 8px; border-radius: 6px;
+    border: 1px solid var(--border); background: rgba(255,255,255,.05);
+    font-family: inherit; font-size: .72rem; font-weight: 700; color: var(--text);
+    flex-shrink: 0;
+  }
+  body.light-mode .info-key-row kbd { background: rgba(0,0,80,.05); }
+  .info-key-row span { font-size: .8rem; color: var(--text); opacity: .82; line-height: 1.5; }
+</style>
+
+<div id="infoModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="info-card">
+
+    <button class="info-close" onclick="document.getElementById('infoModal').classList.remove('open')" title="Close">✕</button>
+
+    <h2>Camelot Wheel <span class="pro-tag">Pro</span></h2>
+    <div class="info-sub">Harmonic Mixing Reference</div>
+
+    <p>The standard Camelot wheel gives you three compatibility types: same key, one step adjacent, and relative major/minor. Camelot Wheel <span class="pro-tag" style="font-size:inherit;letter-spacing:3px;">Pro</span> expands this to <strong>8 directional match categories</strong> — letting you plan not just <em>which</em> keys mix, but <em>how</em> the energy of a set moves with each transition.</p>
+
+    <h3>Why this wheel is different</h3>
+    <p>Traditional harmonic mixing only answers "will these keys clash?" This wheel answers "where does this take the crowd?" Boost moves raise perceived energy and tension. Drop moves lower it. Each level quantifies how dramatic the shift is — so you can plan a slow burn build, a peak-time push, or a smooth comedown with precision.</p>
+    <p>The result: <strong class="gold-em">up to 8× more intentional transitions per key</strong> compared to a standard wheel, each with a defined energy direction.</p>
+
+    <h3>Match Categories</h3>
+    <div class="info-cat-list">
+      <div class="info-cat-row" style="--cc:#00e87d">
+        <div class="info-cat-dot" style="background:#00e87d;color:#00e87d"></div>
+        <span class="info-cat-name">Perfect Match</span>
+        <span class="info-cat-desc">Same harmonic centre, opposite mode (major ↔ minor). The smoothest possible transition — virtually no tonal shift, just a change in emotional colour.</span>
+      </div>
+      <div class="info-cat-row" style="--cc:#d040b8">
+        <div class="info-cat-dot" style="background:#d040b8;color:#d040b8"></div>
+        <span class="info-cat-name">Mood Change</span>
+        <span class="info-cat-desc">A specific jump that preserves harmonic compatibility while introducing a distinctly different emotional character — great for section breaks.</span>
+      </div>
+      <div class="info-cat-row" style="--cc:#ffd060">
+        <div class="info-cat-dot" style="background:#ffd060;color:#ffd060"></div>
+        <span class="info-cat-name">Boost Lv 1</span>
+        <span class="info-cat-desc">One step up the circle of fifths. A mild, natural energy lift — the most common DJ technique for building momentum.</span>
+      </div>
+      <div class="info-cat-row" style="--cc:#88c4ff">
+        <div class="info-cat-dot" style="background:#88c4ff;color:#88c4ff"></div>
+        <span class="info-cat-name">Drop Lv 1</span>
+        <span class="info-cat-desc">One step down the circle. A gentle release of tension — works well after a peak or to ease into a deeper groove.</span>
+      </div>
+      <div class="info-cat-row" style="--cc:#ff9400">
+        <div class="info-cat-dot" style="background:#ff9400;color:#ff9400"></div>
+        <span class="info-cat-name">Boost Lv 2</span>
+        <span class="info-cat-desc">A moderate upward energy shift. Still harmonically compatible, but with a noticeable increase in brightness and drive.</span>
+      </div>
+      <div class="info-cat-row" style="--cc:#4d8aff">
+        <div class="info-cat-dot" style="background:#4d8aff;color:#4d8aff"></div>
+        <span class="info-cat-name">Drop Lv 2</span>
+        <span class="info-cat-desc">A moderate downward shift. Noticeably cooler and more relaxed — use to signal a new phase in your set.</span>
+      </div>
+      <div class="info-cat-row" style="--cc:#ff4000">
+        <div class="info-cat-dot" style="background:#ff4000;color:#ff4000"></div>
+        <span class="info-cat-name">Boost Lv 3</span>
+        <span class="info-cat-desc">Maximum energy boost. A bold, dramatic leap upward — creates tension and anticipation. Use sparingly for climactic moments.</span>
+      </div>
+      <div class="info-cat-row" style="--cc:#1030dc">
+        <div class="info-cat-dot" style="background:#1030dc;color:#1030dc"></div>
+        <span class="info-cat-name">Drop Lv 3</span>
+        <span class="info-cat-desc">Maximum energy drop. A powerful comedown — ideal for closing a peak, introducing a break, or pivoting to a completely different vibe.</span>
+      </div>
+    </div>
+
+    <h3>How to use</h3>
+    <div class="info-steps">
+      <div class="info-step">
+        <div class="info-step-dot"></div>
+        <p><strong>Select a key</strong> by clicking any segment on the wheel or any button in the Quick-Select grid. All compatible keys light up instantly in their category colour.</p>
+      </div>
+      <div class="info-step">
+        <div class="info-step-dot"></div>
+        <p><strong>Read the panel</strong> (right side) for a grouped list of every compatible key, sorted by category. Click any chip to pivot to that key.</p>
+      </div>
+      <div class="info-step">
+        <div class="info-step-dot"></div>
+        <p><strong>Filter categories</strong> using the slider icon in the settings bar to focus only on the match types relevant to your current goal.</p>
+      </div>
+      <div class="info-step">
+        <div class="info-step-dot"></div>
+        <p><strong>Toggle Key Names</strong> (KN) to switch between Camelot notation (e.g. 8A) and musical key names (e.g. A min) — whichever matches your library tags.</p>
+      </div>
+      <div class="info-step">
+        <div class="info-step-dot"></div>
+        <p><strong>Switch layouts</strong> with the view icons — including <strong>Dual Wheels</strong>: two independent wheels side by side, each with its own match-category settings below it. Ideal for comparing two scenarios at once.</p>
+      </div>
+      <div class="info-step">
+        <div class="info-step-dot"></div>
+        <p><strong>Click the active key again</strong> to deselect and reset the wheel — or simply press <strong>R</strong> or <strong>Esc</strong>. Switch layout modes at any time without losing your selection.</p>
+      </div>
+    </div>
+
+    <h3>Quick Check Mode</h3>
+    <div class="info-qc">
+      <div class="info-qc-head">
+        <svg viewBox="0 0 12 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M7.4 0 1 9.3h3.9L3.8 16l7.2-9.4H6.8L7.4 0Z" fill="currentColor"/>
+        </svg>
+        Two keys in. Verdict out.
+      </div>
+      <p>Toggle <strong>Quick Check</strong> in the top bar — or press <kbd>Q</kbd> — to answer one question instantly: <em>do these two keys work together?</em> Pick a first key, then a second — the app immediately names the match category, or flags a <strong style="color:#ff2848">Clash</strong>.</p>
+      <p>The first key stays <strong>locked</strong> while you tap through candidates — perfect for finding the right next track for the song you're playing. All 8 match categories count here, regardless of your filter settings.</p>
+      <p>Tap the locked key again, or press <kbd>R</kbd> / <kbd>Esc</kbd>, to reset.</p>
+    </div>
+
+    <h3>Shortcuts</h3>
+    <div class="info-keys">
+      <div class="info-key-row">
+        <kbd>Q</kbd>
+        <span>Toggle <strong>Quick Check</strong> mode on and off.</span>
+      </div>
+      <div class="info-key-row">
+        <kbd>R</kbd>
+        <span><strong>Reset</strong> — clears the current selection: both keys in Quick Check, both wheels in the Dual view.</span>
+      </div>
+      <div class="info-key-row">
+        <kbd>Esc</kbd>
+        <span>Closes open dialogs (info, category filter) first — then resets, just like R.</span>
+      </div>
+    </div>
+
+    <!-- Playlist Architect Pro promo -->
+    <div style="margin-top:22px;padding:16px 18px;background:rgba(0,232,125,.06);border:1px solid rgba(0,232,125,.18);border-radius:12px;">
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--perfect);margin-bottom:7px;">Want to get more out of it?</div>
+      <p style="margin:0 0 10px;font-size:.81rem;color:var(--text);opacity:.88;line-height:1.55;">This wheel is built right into <strong>Playlist Architect Pro</strong> — a dedicated tool that lets you plan and build complete DJ sets and playlists quickly and efficiently, with harmonic mixing at its core.</p>
+      <p style="margin:0 0 12px;font-size:.81rem;color:var(--text);opacity:.75;line-height:1.55;">And there's more: mnmedia.app offers a growing suite of tools for DJs and music creators. Worth a visit whenever you need a workflow boost.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <a href="https://mnmedia.app/playlist-architect-pro" target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:rgba(0,232,125,.14);border:1px solid rgba(0,232,125,.40);border-radius:8px;color:var(--perfect);font-size:.75rem;font-weight:600;text-decoration:none;letter-spacing:.03em;transition:background .15s,border-color .15s;"
+           onmouseover="this.style.background='rgba(0,232,125,.24)';this.style.borderColor='rgba(0,232,125,.65)'"
+           onmouseout="this.style.background='rgba(0,232,125,.14)';this.style.borderColor='rgba(0,232,125,.40)'">
+          ↗ Playlist Architect Pro
+        </a>
+        <a href="https://mnmedia.app" target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:.75rem;font-weight:500;text-decoration:none;letter-spacing:.03em;transition:background .15s,border-color .15s,color .15s;"
+           onmouseover="this.style.background='rgba(255,255,255,.05)';this.style.color='var(--text)'"
+           onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+          Explore mnmedia.app
+        </a>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+      <span style="font-size:.7rem;color:var(--muted);opacity:.7;letter-spacing:.05em;">© <span class="cw-year"></span> <a href="https://mnmedia.app" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;opacity:.85;">mnmedia.app</a></span>
+      <a href="mailto:info@mnmedia.app" style="font-size:.7rem;color:var(--muted);opacity:.7;letter-spacing:.05em;text-decoration:none;border-bottom:1px solid currentColor;">info@mnmedia.app</a>
+    </div>
+
+  </div>
+</div>
 
 <script>
-  // ── Service Worker Registration ───────────────────────────────────────
+  document.querySelectorAll('.cw-year').forEach(el => el.textContent = new Date().getFullYear());
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('[CW] Service Worker registered:', reg.scope))
-        .catch(err => console.warn('[CW] Service Worker error:', err));
+        .then(reg => console.log('[CW] SW registered:', reg.scope))
+        .catch(err => console.warn('[CW] SW error:', err));
     });
   }
 </script>
-
 </body>
 </html>
