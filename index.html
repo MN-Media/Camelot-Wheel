@@ -775,6 +775,61 @@
     .chip  { transition: transform .35s var(--ease-out), box-shadow .3s var(--ease); }
     .qbtn  { transition: filter .25s var(--ease), box-shadow .3s var(--ease), opacity .5s var(--ease-out); }
     .layout { transition: opacity .3s var(--ease), transform .3s var(--ease); }
+
+    /* ══════════════════════════════════════════════════
+       COMPACT LAYOUT — controls docked as a left side rail
+       (desktop only; below 901px the standard layout returns)
+    ══════════════════════════════════════════════════ */
+    @media (min-width: 901px) {
+      body {
+        height: 100vh; height: 100dvh;   /* hard-locked viewport — views can never push the page */
+        overflow: hidden;
+        padding: 12px 20px 8px 100px; gap: 14px;
+      }
+      /* big, bold brand — constant on top */
+      h1 { font-size: 2.3rem; letter-spacing: -0.04em; }
+      .subtitle { font-size: .8rem; margin-top: 4px; }
+      .quick-label { display: none; }
+      /* footer pinned to the bottom edge — constant across views */
+      footer { margin-top: auto; padding: 10px 0 6px; }
+      /* content zone fills everything between brand and footer */
+      /* nowrap => single flex line => line height = fixed zone height,
+         so the panel can never grow past it (content scrolls inside) */
+      .layout { flex: 1; min-height: 0; align-items: center; flex-wrap: nowrap; }
+      /* head- & footroom for views 1-4 (dual stays full) */
+      body:not(.mode-dual) .layout { padding-top: 26px; padding-bottom: 26px; }
+      .panel { height: auto; align-self: stretch; min-height: 0; overflow-y: auto; }
+      body.mode-dual .layout { align-items: center; }
+      body.mode-no-wheel .layout { padding-top: 40px; }
+
+      .controls-row {
+        position: fixed; left: 14px; top: 50%;
+        transform: translateY(-50%);
+        flex-direction: column; flex-wrap: nowrap;
+        gap: 10px; z-index: 500;
+      }
+      .mode-bar, .settings-bar {
+        flex-direction: column;
+        width: 56px; padding: 6px 0;
+        align-items: center; gap: 4px;
+      }
+      .mode-sep { width: 22px; height: 1px; margin: 2px 0; }
+      .mode-btn { width: 44px; height: 36px; }
+      .sbar-btn { width: 38px; height: 34px; }
+      .theme-btn { width: 34px; height: 34px; }
+
+      /* Quick Check as icon-only square (label via tooltip) */
+      .qm-btn {
+        width: 56px; height: 48px;
+        justify-content: center; padding: 0;
+        font-size: 0; letter-spacing: 0; gap: 0;
+        border-radius: 16px;
+      }
+      .qm-btn svg { width: 14px; height: 19px; }
+
+      /* categories dropdown opens beside the rail */
+      .cat-dropdown { left: calc(100% + 12px); right: auto; top: 0; }
+    }
   </style>
 </head>
 <body>
@@ -1083,20 +1138,42 @@
 
   function availWidth() { return Math.max(260, window.innerWidth - 28); }
 
+  // Height of the content zone between the brand header and the pinned footer
+  function contentHeight() {
+    const hd = document.querySelector('header');
+    const ft = document.querySelector('footer');
+    return window.innerHeight
+      - (hd ? hd.offsetHeight : 95)
+      - (ft ? ft.offsetHeight : 36)
+      - 56;                                // page padding + gaps
+  }
+
   function calcSizeForMode(mode) {
-    switch (mode) {
-      case 'no-panel':   return Math.min(580, availWidth());
-      case 'wheel-only': return calcWheelOnlySize();
-      case 'dual': {
-        const half = Math.floor((window.innerWidth - 110) / 2);
-        return half >= 300 ? Math.min(BASE, half) : Math.min(BASE, availWidth());
+    if (window.innerWidth <= 900) {        // mobile/tablet: standard behaviour
+      switch (mode) {
+        case 'no-panel':   return Math.min(580, availWidth());
+        case 'wheel-only': return calcWheelOnlySize();
+        default:           return Math.min(BASE, availWidth());
       }
-      default:           return Math.min(BASE, availWidth());
+    }
+    // Desktop: each view fills the content zone as fully as possible
+    const ch = contentHeight();
+    switch (mode) {
+      case 'no-panel':                     // wheel + quick grid beside it
+        return Math.max(380, Math.min(640, Math.min(ch - 90, availWidth() - 340)));
+      case 'wheel-only':                   // the reference view
+        return Math.max(320, Math.min(830, Math.min(ch - 40, availWidth() - 110)));
+      case 'dual': {                       // two wheels + legends below (unchanged)
+        const half = Math.floor((window.innerWidth - 230) / 2);
+        return Math.max(300, Math.min(540, Math.min(half, ch - 150)));
+      }
+      default:                             // wheel + panel, quick grid below
+        return Math.max(380, Math.min(540, Math.min(ch - 200, availWidth() - 420)));
     }
   }
 
   // Initial setup
-  applySize(Math.min(BASE, availWidth()));
+  applySize(calcSizeForMode('default'));
 
   let selected     = null;
   let compat       = null;
