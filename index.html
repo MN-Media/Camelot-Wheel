@@ -73,6 +73,12 @@
       background: linear-gradient(95deg, #d97d00, #e6a700);
       -webkit-background-clip: text; background-clip: text;
     }
+    /* Hexagon-Logo: SVG statt Zeichen, damit es auf jedem System gleich sitzt.
+       Höhe 0.8em, Mitte = Mitte der Versalhöhe (~0.71em) -> (0.71 - 0.8) / 2 */
+    .brand-hex {
+      display: inline-block; height: 0.8em; width: 0.704em;
+      vertical-align: -0.045em; margin-right: 0.28em;
+    }
     .subtitle { font-size: 0.85rem; color: var(--muted); letter-spacing: 0; margin-top: 6px; }
 
     /* ══════════════════════════════════════════════════
@@ -837,7 +843,7 @@
 <script>try{if(localStorage.getItem('cw.theme')==='light')document.body.classList.add('light-mode')}catch(e){}</script>
 
 <header>
-  <h1>⬡ Camelot Wheel <span class="pro-tag">Pro</span></h1>
+  <h1><svg class="brand-hex" viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/></svg>Camelot Wheel <span class="pro-tag">Pro</span></h1>
   <p class="subtitle">Harmonic Mixing Tool</p>
 </header>
 
