@@ -1167,8 +1167,12 @@
         const half = Math.floor((window.innerWidth - 230) / 2);
         return Math.max(300, Math.min(540, Math.min(half, ch - 150)));
       }
-      default:                             // wheel + panel, quick grid below
-        return Math.max(380, Math.min(540, Math.min(ch - 200, availWidth() - 420)));
+      default: {                           // wheel + panel, quick grid below
+        // Wheel fills the full panel height; the panel keeps >= 420px width
+        // (its content is unchanged, it just loses spare whitespace)
+        const layoutW = Math.min(1040, window.innerWidth - 120);
+        return Math.max(380, Math.min(600, ch - 146, layoutW - 22 - 420));
+      }
     }
   }
 
