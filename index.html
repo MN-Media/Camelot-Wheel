@@ -843,6 +843,38 @@
 </head>
 <body>
 <script>try{if(localStorage.getItem('cw.theme')==='light')document.body.classList.add('light-mode')}catch(e){}</script>
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   FREE / PRO – zentrale Einstellungen (Launch-Plan, Variante B)
+   Bis Pro kaufbar ist:  status 'soon'  → Knopf „Notify me“
+   Zum Verkaufsstart:    status 'live' + checkoutUrl eintragen → Knopf „Buy Pro“
+   Lizenzprüfung (Schritt D): activate() und verify() an /api/license anbinden.
+   ════════════════════════════════════════════════════════════════════ */
+window.CW_PRO = {
+  status:      'soon',                                         // 'soon' | 'live'
+  price:       '€3.99',
+  checkoutUrl: '',                                             // Lemon-Squeezy-Kauflink (Schritt G)
+  notifyUrl:   'https://mnmedia.app/camelot-wheel#pro-notify', // Formular „Benachrichtige mich“
+  helpUrl:     'https://mnmedia.app/pro',
+  // Pro-Funktionen: Kategorien Lv2/Lv3, Quick Check, Dual-Ansicht
+  cats: ['boostLv2','boostLv3','dropLv2','dropLv3'],
+
+  isPro() {
+    try { return this.verify(localStorage.getItem('cw.pro.ticket')); } catch (e) { return false; }
+  },
+  // Schritt D: signiertes Pro-Ticket offline prüfen (öffentlicher Schlüssel).
+  // Bis dahin gibt es nur einen Test-Schalter auf dem eigenen Rechner.
+  verify(ticket) {
+    if (!ticket) return false;
+    const local = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    return local && ticket === 'dev';
+  },
+  // Schritt D: Schlüssel an /api/license schicken, Ticket speichern.
+  async activate(key) {
+    throw new Error('License activation opens with the Pro launch.');
+  }
+};
+</script>
 
 <header>
   <h1><svg class="brand-hex" viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/></svg>Camelot Wheel <span class="pro-tag">Pro</span></h1>
@@ -1194,6 +1226,8 @@
   let lightMode    = document.body.classList.contains('light-mode');
   let tipsEnabled  = false;   // Mixing Tips — off by default
   const disabledCats = new Set(['boostLv2','boostLv3','dropLv2','dropLv3']);
+  const isPro = () => window.CW_PRO.isPro();
+  const proLocked = cat => !isPro() && window.CW_PRO.cats.includes(cat);
 
   function midAngle(pos) { return (pos * 30 - 90) * Math.PI / 180; }
   const posHue = pos => ((pos - 1) * 30 + 180) % 360;
@@ -1598,7 +1632,7 @@
   function buildLegendHTML() {
     return `<div class="legend">${CAT_META.map(({ key, label, color }) => {
       const off = disabledCats.has(key);
-      return `<div class="leg-item${off?' leg-off':''}" style="--tc:${color}" onclick="__cw.toggleCat('${key}')">
+      return `<div class="leg-item${off?' leg-off':''}${proLocked(key)?' leg-locked':''}" style="--tc:${color}" onclick="__cw.toggleCat('${key}')"${proLocked(key)?' title="Pro feature"':''}>
         <div class="leg-dot" style="background:${off?'#232327':color}"></div>${label}
         <div class="leg-mini-pill"></div></div>`;
     }).join('')}</div>`;
@@ -1793,6 +1827,7 @@
 
   // ── Category toggle ───────────────────────────────────────────────────
   function toggleCat(cat) {
+    if (proLocked(cat)) { openProSheet('levels'); return; }
     if (disabledCats.has(cat)) {
       disabledCats.delete(cat);
       if (selected && compat && compat[cat]) {
@@ -1820,7 +1855,7 @@
     const tipColor = 'rgba(180,180,220,.7)';
     el.innerHTML =
       CAT_META.map(({ key, label, color }) => `
-        <div class="cat-drop-row${disabledCats.has(key)?' cat-off':''}"
+        <div class="cat-drop-row${disabledCats.has(key)?' cat-off':''}${proLocked(key)?' cat-locked':''}"
              onclick="__cw.toggleCat('${key}')"
              style="--cc:${color}">
           <div class="cat-drop-dot"  style="background:${color}"></div>
@@ -1960,6 +1995,7 @@
   }
 
   function setMode(mode) {
+    if (mode === 'dual' && !isPro()) { openProSheet('dual'); return; }
     if (mode === currentMode || quickMode) return;
     focusFade(true);
     setTimeout(() => {
@@ -2090,6 +2126,7 @@
   }
 
   function setQuickMode(on) {
+    if (on && !isPro()) { openProSheet('quick'); return; }
     if (on === quickMode) return;
     const btn = document.getElementById('qm-btn');
 
@@ -2137,6 +2174,8 @@
       // Esc closes open overlays first, then resets
       const modal = document.getElementById('infoModal');
       if (modal && modal.classList.contains('open')) { modal.classList.remove('open'); return; }
+      const ps = document.getElementById('proSheet');
+      if (ps && ps.classList.contains('open')) { closeProSheet(); return; }
       if (catDropdown.classList.contains('open')) {
         catDropdown.classList.remove('open');
         catBtn.classList.remove('sbar-active');
@@ -2374,7 +2413,58 @@
   // ── Global API ────────────────────────────────────────────────────────
   // toggle: deselects if code is already selected, otherwise selects
   const toggle = code => quickMode ? quickPick(code) : select(code === selected ? null : code);
-  window.__cw = { select, toggle, toggleCat, toggleTips, qmSwap, qmReset, toggleCatL, toggleTipsDual, toggleCatR: wheel2.toggleCat };
+  // ══════════════════════════════════════════════════════════════════════
+  // PRO SHEET – erklärt Pro; „Notify me“ (status soon) bzw. „Buy“ + Schlüssel (live)
+  // ══════════════════════════════════════════════════════════════════════
+  const PRO_REASON = {
+    levels: 'Boost and drop levels 2 and 3 are part of Pro.',
+    quick:  'Quick Check is part of Pro.',
+    dual:   'Dual view is part of Pro.',
+    info:   'Unlock the full energy map.'
+  };
+  function openProSheet(reason) {
+    const P = window.CW_PRO, el = document.getElementById('proSheet');
+    el.querySelector('.pro-why').textContent = PRO_REASON[reason] || PRO_REASON.info;
+    el.querySelectorAll('[data-pro-price]').forEach(n => n.textContent = P.price);
+    const live = P.status === 'live' && !!P.checkoutUrl;
+    el.classList.toggle('is-live', live);
+    const cta = el.querySelector('.pro-cta');
+    cta.href = live ? P.checkoutUrl : P.notifyUrl;
+    cta.textContent = live ? `Buy Pro – ${P.price}` : 'Notify me when Pro launches';
+    el.querySelector('.pro-key').hidden = true;
+    el.querySelector('.pro-msg').textContent = '';
+    el.classList.add('open');
+    setTimeout(() => cta.focus(), 30);
+  }
+  function closeProSheet() { document.getElementById('proSheet').classList.remove('open'); }
+  function showProKey() {
+    const box = document.querySelector('#proSheet .pro-key');
+    box.hidden = false; box.querySelector('input').focus();
+  }
+  async function activateProKey(ev) {
+    ev.preventDefault();
+    const input = document.querySelector('#proSheet .pro-key input');
+    const msg = document.querySelector('#proSheet .pro-msg');
+    const key = input.value.trim();
+    if (!key) { msg.textContent = 'Paste the license key from your purchase email.'; return; }
+    try {
+      await window.CW_PRO.activate(key);
+      msg.textContent = 'Pro is active on this device.';
+      applyProState();
+      setTimeout(closeProSheet, 900);
+    } catch (e) { msg.textContent = e.message || 'That key did not work. Check it and try again.'; }
+  }
+  // Oberfläche an Free/Pro anpassen (Schlösser, gesperrte Kategorien)
+  function applyProState() {
+    const pro = isPro();
+    document.body.classList.toggle('pro-free', !pro);
+    if (!pro) window.CW_PRO.cats.forEach(c => disabledCats.add(c));
+    updateAnimTargets(); startRaf(); draw(); updatePanel(); updateQuick(); updateCatDropdown();
+  }
+  applyProState();
+
+  window.__cw = { select, toggle, toggleCat, toggleTips, qmSwap, qmReset, toggleCatL, toggleTipsDual, toggleCatR: wheel2.toggleCat,
+                  openProSheet, closeProSheet, showProKey, activateProKey };
 
   // ── Tip delegation: Quick-Select grid & Panel chips ───────────────────
   // Single document-level mousemove — canvas has its own handler above.
@@ -2595,6 +2685,93 @@
   body.light-mode .info-key-row kbd { background: rgba(0,0,80,.05); }
   .info-key-row span { font-size: .8rem; color: var(--text); opacity: .82; line-height: 1.5; }
 </style>
+
+<style>
+  /* ── Pro: Schlösser ─────────────────────────────────────────── */
+  :root { --lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7.5 11V8a4.5 4.5 0 0 1 9 0v3' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'/%3E%3Crect x='4.5' y='10.5' width='15' height='10.5' rx='2.6'/%3E%3C/svg%3E"); }
+  .leg-item.leg-locked .leg-mini-pill,
+  .cat-drop-row.cat-locked .cat-drop-pill {
+    border: 0 !important; width: 13px; height: 13px; border-radius: 0;
+    background: linear-gradient(135deg, #ff9500, #ffcc33);
+    -webkit-mask: var(--lock) center / contain no-repeat; mask: var(--lock) center / contain no-repeat;
+  }
+  .leg-item.leg-locked .leg-mini-pill::after,
+  .cat-drop-row.cat-locked .cat-drop-pill::after { display: none; }
+  body.pro-free .mode-btn[data-mode="dual"], body.pro-free #qm-btn { position: relative; }
+  body.pro-free .mode-btn[data-mode="dual"]::after, body.pro-free #qm-btn::after {
+    content: ''; position: absolute; top: 3px; right: 3px; width: 10px; height: 10px;
+    background: linear-gradient(135deg, #ff9500, #ffcc33);
+    -webkit-mask: var(--lock) center / contain no-repeat; mask: var(--lock) center / contain no-repeat;
+    pointer-events: none;
+  }
+
+  /* ── Pro-Fenster ───────────────────────────────────────────── */
+  #proSheet {
+    display: none; position: fixed; inset: 0; z-index: 9100;
+    background: rgba(0,0,0,.5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  #proSheet.open { display: flex; }
+  .pro-card {
+    position: relative; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;
+    background: linear-gradient(180deg, rgba(255,149,0,.10), rgba(255,204,51,0) 45%), var(--surface);
+    border: 1px solid rgba(255,170,40,.32); border-radius: 22px;
+    padding: 30px 28px 24px; color: var(--text);
+    box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  }
+  body.light-mode .pro-card { box-shadow: 0 12px 50px rgba(0,0,0,.18); border-color: rgba(217,125,0,.35); }
+  .pro-card h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+  .pro-why { margin-top: 8px; color: var(--muted); font-size: .92rem; }
+  .pro-list { list-style: none; margin: 20px 0 22px; display: grid; gap: 10px; font-size: .9rem; }
+  .pro-list li { display: grid; grid-template-columns: 16px 1fr; gap: 10px; align-items: start; line-height: 1.4; }
+  .pro-list li::before { content: ''; width: 8px; height: 8px; margin-top: 6px; border-radius: 3px; background: var(--c, #ffb300); }
+  .pro-price { font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+  .pro-price span { font-size: .85rem; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
+  .pro-cta {
+    display: flex; align-items: center; justify-content: center; margin-top: 18px;
+    height: 48px; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: .95rem;
+    background: linear-gradient(95deg, #ff9500, #ffcc33); color: #221500;
+  }
+  .pro-cta:hover { filter: brightness(1.06); }
+  .pro-note { margin-top: 10px; font-size: .78rem; color: var(--muted); text-align: center; line-height: 1.45; }
+  #proSheet:not(.is-live) .only-live, #proSheet.is-live .only-soon { display: none; }
+  .pro-links { display: flex; justify-content: center; gap: 18px; margin-top: 14px; }
+  .pro-links button, .pro-links a { background: none; border: 0; color: var(--muted); font: inherit; font-size: .82rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .pro-links button:hover, .pro-links a:hover { color: var(--text); }
+  .pro-key { margin-top: 14px; display: flex; gap: 8px; }
+  .pro-key[hidden] { display: none; }
+  .pro-key input { flex: 1; min-width: 0; height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; font-size: .88rem; }
+  .pro-key button { height: 42px; padding: 0 16px; border-radius: 12px; border: 0; background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  .pro-msg { margin-top: 10px; font-size: .82rem; text-align: center; color: var(--muted); min-height: 1.2em; }
+</style>
+
+<div id="proSheet" role="dialog" aria-modal="true" aria-labelledby="proTitle" onclick="if(event.target===this)__cw.closeProSheet()">
+  <div class="pro-card">
+    <button class="info-close" onclick="__cw.closeProSheet()" title="Close" aria-label="Close">✕</button>
+    <h2 id="proTitle">Camelot Wheel <span class="pro-tag">Pro</span></h2>
+    <p class="pro-why">Unlock the full energy map.</p>
+    <ul class="pro-list">
+      <li style="--c:#ff3800">Boost and drop levels 2 and 3: the full energy map</li>
+      <li style="--c:#ffcc33">Quick Check: compare any two keys</li>
+      <li style="--c:#4d8aff">Dual view: two wheels side by side</li>
+      <li style="--c:#00e87d">Up to 3 devices, works offline</li>
+      <li style="--c:#a1a1a6">All future updates included</li>
+    </ul>
+    <div class="pro-price"><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€3.99</span><span>one-time · no subscription</span></div>
+    <a class="pro-cta" href="#" target="_blank" rel="noopener">Notify me when Pro launches</a>
+    <p class="pro-note only-soon">Pro goes on sale soon. Leave your email and you'll hear first.</p>
+    <p class="pro-note only-live">Secure checkout. 14-day money-back guarantee.</p>
+    <div class="pro-links">
+      <button type="button" class="only-live" onclick="__cw.showProKey()">I have a license key</button>
+      <button type="button" onclick="__cw.closeProSheet()">Not now</button>
+    </div>
+    <form class="pro-key" hidden onsubmit="__cw.activateProKey(event)">
+      <input type="text" placeholder="License key" autocomplete="off" spellcheck="false" aria-label="License key">
+      <button type="submit">Activate</button>
+    </form>
+    <p class="pro-msg" role="status" aria-live="polite"></p>
+  </div>
+</div>
 
 <div id="infoModal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="info-card">

@@ -16,6 +16,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options        = "DENY"
+    # Einbetten nur auf der eigenen Website erlauben (Camelot-Wheel-Seite auf mnmedia.app)
+    Content-Security-Policy = "frame-ancestors 'self' https://mnmedia.app https://www.mnmedia.app"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy        = "strict-origin-when-cross-origin"
