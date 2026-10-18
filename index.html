@@ -2601,7 +2601,7 @@ window.CW_PRO = {
   body.light-mode .info-card h3 { border-bottom-color: rgba(0,0,0,.10); }
   .info-card p { margin: 0 0 10px; color: var(--text); opacity: .88; }
 
-  /* Category rows — roomy cards with a colored edge per category */
+  /* Category rows — thin frame in the colour of the match type */
   .info-cat-list { display: flex; flex-direction: column; gap: 9px; }
   .info-cat-row {
     display: flex;
@@ -2609,11 +2609,20 @@ window.CW_PRO = {
     gap: 12px;
     padding: 11px 13px;
     background: rgba(255,255,255,.025);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--cc, var(--border));
+    border: 1px solid color-mix(in srgb, var(--cc, var(--border)) 70%, transparent);
     border-radius: 10px;
   }
-  body.light-mode .info-cat-row { background: rgba(0,0,80,.025); }
+  body.light-mode .info-cat-row { background: rgba(0,0,80,.025); border-color: color-mix(in srgb, var(--cc, var(--border)) 80%, transparent); }
+  /* Hinweis „Requires Pro“ – nur in Core sichtbar */
+  .needs-pro {
+    display: none; align-items: center; gap: 5px; margin-left: 6px; padding: 1px 8px 1px 6px;
+    border-radius: 999px; border: 1px solid rgba(255,170,40,.45);
+    color: #ffb300; font-size: .7rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; vertical-align: 1px;
+    text-transform: none; opacity: 1;
+  }
+  .needs-pro::before { content: ''; width: 9px; height: 9px; background: currentColor; -webkit-mask: var(--lock) center / contain no-repeat; mask: var(--lock) center / contain no-repeat; }
+  body.light-mode .needs-pro { color: #c47a00; border-color: rgba(196,122,0,.45); }
+  body.pro-free .needs-pro { display: inline-flex; }
   .info-cat-dot {
     flex-shrink: 0;
     width: 11px; height: 11px;
@@ -2832,22 +2841,22 @@ window.CW_PRO = {
       <div class="info-cat-row" style="--cc:#ff9400">
         <div class="info-cat-dot" style="background:#ff9400;color:#ff9400"></div>
         <span class="info-cat-name">Boost Lv 2</span>
-        <span class="info-cat-desc">A moderate upward energy shift. Still harmonically compatible, but with a noticeable increase in brightness and drive.</span>
+        <span class="info-cat-desc">A moderate upward energy shift. Still harmonically compatible, but with a noticeable increase in brightness and drive. <span class="needs-pro">Requires Pro</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#4d8aff">
         <div class="info-cat-dot" style="background:#4d8aff;color:#4d8aff"></div>
         <span class="info-cat-name">Drop Lv 2</span>
-        <span class="info-cat-desc">A moderate downward shift. Noticeably cooler and more relaxed — use to signal a new phase in your set.</span>
+        <span class="info-cat-desc">A moderate downward shift. Noticeably cooler and more relaxed — use to signal a new phase in your set. <span class="needs-pro">Requires Pro</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#ff4000">
         <div class="info-cat-dot" style="background:#ff4000;color:#ff4000"></div>
         <span class="info-cat-name">Boost Lv 3</span>
-        <span class="info-cat-desc">Maximum energy boost. A bold, dramatic leap upward — creates tension and anticipation. Use sparingly for climactic moments.</span>
+        <span class="info-cat-desc">Maximum energy boost. A bold, dramatic leap upward — creates tension and anticipation. Use sparingly for climactic moments. <span class="needs-pro">Requires Pro</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#1030dc">
         <div class="info-cat-dot" style="background:#1030dc;color:#1030dc"></div>
         <span class="info-cat-name">Drop Lv 3</span>
-        <span class="info-cat-desc">Maximum energy drop. A powerful comedown — ideal for closing a peak, introducing a break, or pivoting to a completely different vibe.</span>
+        <span class="info-cat-desc">Maximum energy drop. A powerful comedown — ideal for closing a peak, introducing a break, or pivoting to a completely different vibe. <span class="needs-pro">Requires Pro</span></span>
       </div>
     </div>
 
@@ -2871,7 +2880,7 @@ window.CW_PRO = {
       </div>
       <div class="info-step">
         <div class="info-step-dot"></div>
-        <p><strong>Switch layouts</strong> with the view icons — including <strong>Dual Wheels</strong>: two independent wheels side by side, each with its own match-category settings below it. Ideal for comparing two scenarios at once.</p>
+        <p><strong>Switch layouts</strong> with the view icons — including <strong>Dual Wheels</strong>: two independent wheels side by side, each with its own match-category settings below it. Ideal for comparing two scenarios at once. <span class="needs-pro">Requires Pro</span></p>
       </div>
       <div class="info-step">
         <div class="info-step-dot"></div>
@@ -2879,7 +2888,7 @@ window.CW_PRO = {
       </div>
     </div>
 
-    <h3>Quick Check Mode</h3>
+    <h3>Quick Check Mode <span class="needs-pro">Requires Pro</span></h3>
     <div class="info-qc">
       <div class="info-qc-head">
         <svg viewBox="0 0 12 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
