@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Camelot Wheel Pro — DJ Harmonic Mixer</title>
+  <title>Camelot Wheel — DJ Harmonic Mixer</title>
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#0071e3">
@@ -68,6 +68,15 @@
       background: linear-gradient(95deg, #ff9500, #ffcc33);
       -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent; color: #ffb300;
+    }
+    .core-tag {
+      background: linear-gradient(95deg, #2997ff, #5ac8fa);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: #2997ff;
+    }
+    body.light-mode .core-tag {
+      background: linear-gradient(95deg, #0071e3, #2997ff);
+      -webkit-background-clip: text; background-clip: text;
     }
     body.light-mode .pro-tag {
       background: linear-gradient(95deg, #d97d00, #e6a700);
@@ -877,7 +886,7 @@ window.CW_PRO = {
 </script>
 
 <header>
-  <h1><svg class="brand-hex" viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/></svg>Camelot Wheel <span class="pro-tag">Pro</span></h1>
+  <h1><svg class="brand-hex" viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/></svg>Camelot Wheel <span class="tier-tag core-tag">Core</span></h1>
   <p class="subtitle">Harmonic Mixing Tool</p>
 </header>
 
@@ -1016,7 +1025,7 @@ window.CW_PRO = {
   <div class="mode-sep"></div>
 
   <!-- Info -->
-  <button class="sbar-btn" id="info-btn" title="About Camelot Wheel Pro" onclick="document.getElementById('infoModal').classList.add('open')">
+  <button class="sbar-btn" id="info-btn" title="About Camelot Wheel" onclick="document.getElementById('infoModal').classList.add('open')">
     <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
       <circle cx="9" cy="9" r="7.5"/>
       <line x1="9" y1="8" x2="9" y2="13"/>
@@ -2458,6 +2467,17 @@ window.CW_PRO = {
   function applyProState() {
     const pro = isPro();
     document.body.classList.toggle('pro-free', !pro);
+    const setTier = () => {
+      document.querySelectorAll('.tier-tag').forEach(el => {
+        el.textContent = pro ? 'Pro' : 'Core';
+        el.classList.toggle('pro-tag', pro);
+        el.classList.toggle('core-tag', !pro);
+      });
+      document.title = `Camelot Wheel ${pro ? 'Pro' : 'Core'} — DJ Harmonic Mixer`;
+    };
+    setTier();
+    // Info-Fenster steht im HTML erst nach diesem Skript → nach dem Laden nochmal
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setTier, { once: true });
     if (!pro) window.CW_PRO.cats.forEach(c => disabledCats.add(c));
     updateAnimTargets(); startRaf(); draw(); updatePanel(); updateQuick(); updateCatDropdown();
   }
@@ -2778,10 +2798,10 @@ window.CW_PRO = {
 
     <button class="info-close" onclick="document.getElementById('infoModal').classList.remove('open')" title="Close">✕</button>
 
-    <h2>Camelot Wheel <span class="pro-tag">Pro</span></h2>
+    <h2>Camelot Wheel <span class="tier-tag core-tag">Core</span></h2>
     <div class="info-sub">Harmonic Mixing Reference</div>
 
-    <p>The standard Camelot wheel gives you three compatibility types: same key, one step adjacent, and relative major/minor. Camelot Wheel <span class="pro-tag" style="font-size:inherit;letter-spacing:3px;">Pro</span> expands this to <strong>8 directional match categories</strong> — letting you plan not just <em>which</em> keys mix, but <em>how</em> the energy of a set moves with each transition.</p>
+    <p>The standard Camelot wheel gives you three compatibility types: same key, one step adjacent, and relative major/minor. Camelot Wheel expands this to <strong>8 directional match categories</strong> (Core includes level 1 of each energy direction, <span class="pro-tag" style="font-size:inherit;letter-spacing:inherit;">Pro</span> adds levels 2 and 3) — letting you plan not just <em>which</em> keys mix, but <em>how</em> the energy of a set moves with each transition.</p>
 
     <h3>Why this wheel is different</h3>
     <p>Traditional harmonic mixing only answers "will these keys clash?" This wheel answers "where does this take the crowd?" Boost moves raise perceived energy and tension. Drop moves lower it. Each level quantifies how dramatic the shift is — so you can plan a slow burn build, a peak-time push, or a smooth comedown with precision.</p>
