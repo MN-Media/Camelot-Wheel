@@ -2514,7 +2514,7 @@ window.CW_PRO = {
 })();
 </script>
 
-<footer style="width:100%;text-align:center;padding:14px 0 8px;font-size:.6rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);opacity:.5;user-select:none;">© <span class="cw-year"></span> mnmedia.app</footer>
+<footer style="width:100%;text-align:center;padding:14px 0 8px;font-size:.6rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);opacity:.7;">© <span class="cw-year"></span> mnmedia.app · <a data-site-link="/impressum" href="https://mnmedia.app/impressum" target="_blank" rel="noopener" style="color:inherit;">Impressum</a> · <a data-site-link="/datenschutz" href="https://mnmedia.app/datenschutz" target="_blank" rel="noopener" style="color:inherit;">Privacy</a></footer>
 
 <!-- ── Mixing Tip Tooltip ────────────────────────────────────────── -->
 <div id="cwTip">
@@ -2942,7 +2942,7 @@ window.CW_PRO = {
 
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
       <span style="font-size:.7rem;color:var(--muted);opacity:.7;letter-spacing:.05em;">© <span class="cw-year"></span> <a href="https://mnmedia.app" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;opacity:.85;">mnmedia.app</a></span>
-      <a href="mailto:info@mnmedia.app" style="font-size:.7rem;color:var(--muted);opacity:.7;letter-spacing:.05em;text-decoration:none;border-bottom:1px solid currentColor;">info@mnmedia.app</a>
+      <span style="font-size:.7rem;color:var(--muted);opacity:.7;letter-spacing:.05em;"><a href="mailto:info@mnmedia.app" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">info@mnmedia.app</a> · <a data-site-link="/impressum" href="https://mnmedia.app/impressum" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">Impressum</a> · <a data-site-link="/datenschutz" href="https://mnmedia.app/datenschutz" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">Privacy</a></span>
     </div>
 
   </div>
@@ -2950,6 +2950,8 @@ window.CW_PRO = {
 
 <script>
   document.querySelectorAll('.cw-year').forEach(el => el.textContent = new Date().getFullYear());
+  // Impressum-/Datenschutz-Links: in der Testphase auf die Test-Website (CW_SITE)
+  document.querySelectorAll('[data-site-link]').forEach(a => { a.href = CW_SITE + a.dataset.siteLink; });
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
