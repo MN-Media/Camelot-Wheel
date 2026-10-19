@@ -10,11 +10,11 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CamelotWhl">
+  <meta name="apple-mobile-web-app-title" content="Camelot Wheel">
   <meta name="description" content="DJ Harmonic Mixing Tool — Camelot Wheel for key-compatible track selection">
 
   <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 
   <style>
@@ -859,12 +859,14 @@
    Zum Verkaufsstart:    status 'live' + checkoutUrl eintragen → Knopf „Buy Pro“
    Lizenzprüfung (Schritt D): activate() und verify() an /api/license anbinden.
    ════════════════════════════════════════════════════════════════════ */
+// Website-Adresse: in der Testphase (Wheel läuft unter *.netlify.app) die Test-Website
+const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 window.CW_PRO = {
   status:      'soon',                                         // 'soon' | 'live'
   price:       '€3.99',
   checkoutUrl: '',                                             // Lemon-Squeezy-Kauflink (Schritt G)
-  notifyUrl:   'https://mnmedia.app/camelot-wheel#pro-notify', // Formular „Benachrichtige mich“
-  helpUrl:     'https://mnmedia.app/pro',
+  notifyUrl:   CW_SITE + '/camelot-wheel#pro-notify', // Formular „Benachrichtige mich“
+  helpUrl:     CW_SITE + '/pro',
   // Pro-Funktionen: Kategorien Lv2/Lv3, Quick Check, Dual-Ansicht
   cats: ['boostLv2','boostLv3','dropLv2','dropLv3'],
 
@@ -2923,7 +2925,7 @@ window.CW_PRO = {
       <p style="margin:0 0 10px;font-size:.81rem;color:var(--text);opacity:.88;line-height:1.55;">This wheel is built right into <strong>Playlist Architect Pro</strong> — a dedicated tool that lets you plan and build complete DJ sets and playlists quickly and efficiently, with harmonic mixing at its core.</p>
       <p style="margin:0 0 12px;font-size:.81rem;color:var(--text);opacity:.75;line-height:1.55;">And there's more: mnmedia.app offers a growing suite of tools for DJs and music creators. Worth a visit whenever you need a workflow boost.</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        <a href="https://mnmedia.app/playlist-architect-pro" target="_blank" rel="noopener"
+        <a href="https://mnmedia.app/playlist-architect" target="_blank" rel="noopener"
            style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:rgba(0,232,125,.14);border:1px solid rgba(0,232,125,.40);border-radius:8px;color:var(--perfect);font-size:.75rem;font-weight:600;text-decoration:none;letter-spacing:.03em;transition:background .15s,border-color .15s;"
            onmouseover="this.style.background='rgba(0,232,125,.24)';this.style.borderColor='rgba(0,232,125,.65)'"
            onmouseout="this.style.background='rgba(0,232,125,.14)';this.style.borderColor='rgba(0,232,125,.40)'">
