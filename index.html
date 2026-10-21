@@ -854,6 +854,9 @@
 <script>try{if(localStorage.getItem('cw.theme')==='light')document.body.classList.add('light-mode')}catch(e){}
 /* Look: 'industrial' (Standard, Website-CI) | 'classic' (Apple). Gespeichert als cw.look */
 try{if(localStorage.getItem('cw.look')!=='classic')document.body.classList.add('look-ind')}catch(e){document.body.classList.add('look-ind')}
+/* Grundfarben im Industrial-Look: 'color' | 'code' | 'grey' – Vorschau: ?idle=code */
+var CW_IDLE_DEFAULT='color';
+(function(){var q=new URLSearchParams(location.search).get('idle');document.body.dataset.idle=/^(color|code|grey)$/.test(q||'')?q:CW_IDLE_DEFAULT})();
 (function(){var m=document.querySelector('meta[name=theme-color]');if(m&&document.body.classList.contains('look-ind'))m.content='#000000'})();</script>
 <script>
 /* ════════════════════════════════════════════════════════════════════
@@ -1339,7 +1342,19 @@ window.CW_PRO = {
   const FONT_TXT = () => IND() ? "'Work Sans', system-ui, sans-serif" : "'Helvetica Neue', Arial, sans-serif";
   const FONT_HUB = () => IND() ? "'Anton', Impact, sans-serif" : "'Helvetica Neue', Arial";
   // Grundfarbe eines Segments ohne Auswahl (Classic: Regenbogen, Industrial: neutral)
+  const IDLE = () => document.body.dataset.idle || 'color';
+  // Camelot-Farben im Plakat-Stil: flach, B kräftig, A heller; Schrift schwarz oder weiß nach Helligkeit
+  function camFill(isB, hue) { return `hsl(${hue},${isB ? 90 : 85}%,${isB ? 58 : 77}%)`; }
+  function camInk(isB, hue) {
+    const s = (isB ? 90 : 85) / 100, l = (isB ? 58 : 77) / 100;
+    const k = n => (n + hue / 30) % 12, a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    const lin = c => c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
+    const Y = .2126 * lin(f(0)) + .7152 * lin(f(8)) + .0722 * lin(f(4));
+    return Y > .28 ? `hsl(${hue},80%,10%)` : '#ffffff';
+  }
   function baseFill(isB, hue) {
+    if (IND() && IDLE() === 'color') return camFill(isB, hue);
     if (IND()) return lightMode ? (isB ? '#d6d6d6' : '#ebebeb') : (isB ? '#2b2b2b' : '#1b1b1b');
     return isB ? (lightMode ? `hsl(${hue},82%,55%)` : `hsl(${hue},96%,52%)`)
                : (lightMode ? `hsl(${hue},82%,70%)` : `hsl(${hue},96%,72%)`);
@@ -1349,7 +1364,7 @@ window.CW_PRO = {
     : { fill: lightMode ? '#f5f5f7' : '#000000', ring: lightMode ? RING_COLOR_LIGHT : RING_COLOR_DARK,
         ink: lightMode ? '#1a1a3a' : '#fff', idle: lightMode ? '#86868b' : '#48484d',
         sub: lightMode ? 'rgba(60,60,120,.55)' : 'rgba(200,200,238,.65)' };
-  function segStyleInd(state) {
+  function segStyleInd(state, hue, isB) {
     const gap = lightMode ? '#ffffff' : '#000000';
     const S = (fill, text) => ({ fill, stroke:gap, text, glow:null, glowBlur:0 });
     switch (state) {
@@ -1364,7 +1379,7 @@ window.CW_PRO = {
       case 'dropLv3':  return S('#1030ee', '#ffffff');
       case 'clash':    return S('#ff2848', '#ffffff');
       case 'dim':      return lightMode ? S('#f4f4f4', '#c4c4c4') : S('#121212', '#3a3a3a');
-      default:         return { fill:null, stroke:gap, text: lightMode ? '#000000' : '#e8e8e8', glow:null, glowBlur:0 };
+      default:         return { fill:null, stroke:gap, text: IDLE() === 'color' ? camInk(!!isB, hue) : (lightMode ? '#000000' : '#e8e8e8'), glow:null, glowBlur:0 };
     }
   }
 
@@ -1372,7 +1387,7 @@ window.CW_PRO = {
   // Dark mode uses vivid solid fills so matches glow like the selected key.
   // Light mode colors are unchanged.
   function segStyle(state, hue) {
-    if (IND()) return segStyleInd(state);
+    if (IND()) return segStyleInd(state, hue, segStyle.isB);
     if (!lightMode) {
       // ── Dark mode ────────────────────────────────────────────────────
       switch (state) {
@@ -1416,7 +1431,7 @@ window.CW_PRO = {
     const gm   = a ? a.glow  : 0;
     const hv   = a ? a.hover : 0;
     const hue  = posHue(pos);
-    const s    = segStyle(state, hue);
+    segStyle.isB = isB; const s = segStyle(state, hue);
 
     const baseR1 = isB ? RA + RGAP : R0;
     const baseR2 = isB ? RB        : RA - RGAP;
@@ -1459,6 +1474,17 @@ window.CW_PRO = {
     ctx.lineWidth   = IND() ? 2.4 * (W/BASE) : hasGlow ? (lightMode?2.2:2) : (lightMode?1.6:1.2);
     ctx.stroke();
     if (hasGlow) ctx.restore();
+    if (IND() && IDLE() === 'code' && (state === 'default' || state === 'dim')) {
+      const bw = 7 * (W/BASE), ro = isB ? r2 : r1 + bw, ri = isB ? r2 - bw : r1;
+      ctx.save();
+      ctx.globalAlpha = state === 'dim' ? 0.32 : 1;
+      ctx.beginPath();
+      ctx.arc(CX, CY, ro, saOuter, eaOuter);
+      ctx.arc(CX, CY, ri, eaOuter, saOuter, true);
+      ctx.closePath();
+      ctx.fillStyle = camFill(isB, hue); ctx.fill();
+      ctx.restore();
+    }
 
     // Hover overlay — subtle brightness lift
     if (hv > 0.005) {
@@ -1790,7 +1816,13 @@ window.CW_PRO = {
   // Helper: is a mode one of the side modes?
   function isSideMode(m) { return m === 'no-panel' || m === 'no-wheel'; }
 
-  const qbtnInd = () => lightMode ? { B:'#d6d6d6', A:'#ebebeb', ink:'#000' } : { B:'#2b2b2b', A:'#1b1b1b', ink:'#f0f0f0' };
+  // Stil einer Quick-Select-Taste im Industrial-Look (Grundzustand)
+  function qbtnStyle(L, hue) {
+    const isB = L === 'B';
+    if (IDLE() === 'color') return `background:${camFill(isB, hue)};color:${camInk(isB, hue)};`;
+    const bg = lightMode ? (isB ? '#d6d6d6' : '#ebebeb') : (isB ? '#2b2b2b' : '#1b1b1b');
+    return `background:${bg};color:${lightMode ? '#000' : '#f0f0f0'};--hue:${camFill(isB, hue)};`;
+  }
 
   // ── Default grid: 12 columns, each col = pos-num + B + A ─────────────
   function buildQuickGrid() {
@@ -1799,13 +1831,12 @@ window.CW_PRO = {
     for (let pos = 1; pos <= 12; pos++) {
       const hue  = posHue(pos);
       if (IND()) {
-        const q = qbtnInd();
         html += `<div class="qkey">
         <div class="pos-num">${pos}</div>
         <div class="qbtn" id="qb-${pos}B" onclick="__cw.toggle('${pos}B')"
-          style="background:${q.B};color:${q.ink};">${pos}B</div>
+          style="${qbtnStyle('B', hue)}">${pos}B</div>
         <div class="qbtn" id="qb-${pos}A" onclick="__cw.toggle('${pos}A')"
-          style="background:${q.A};color:${q.ink};">${pos}A</div>
+          style="${qbtnStyle('A', hue)}">${pos}A</div>
       </div>`;
         continue;
       }
@@ -1834,9 +1865,8 @@ window.CW_PRO = {
       for (let pos = 1; pos <= 12; pos++) {
         const hue = posHue(pos);
         if (IND()) {
-          const q = qbtnInd();
           html += `<div class="qbtn" id="qb-${pos}${L}" onclick="__cw.toggle('${pos}${L}')"
-          style="background:${q[L]};color:${q.ink};">${pos}${L}</div>`;
+          style="${qbtnStyle(L, hue)}">${pos}${L}</div>`;
           continue;
         }
         const bg  = L === 'B'
@@ -2347,7 +2377,7 @@ window.CW_PRO = {
     function seg(pos, isB, state) {
       const code = `${pos}${isB?'B':'A'}`;
       const a = anim[code]; const sc = a?a.scale:1, gm = a?a.glow:0, hv = a?a.hover:0;
-      const hue = posHue(pos); const s = segStyle(state, hue);
+      const hue = posHue(pos); segStyle.isB = isB; const s = segStyle(state, hue);
       const b1 = isB ? ra+rgap : r0, b2 = isB ? rb : ra-rgap;
       const mid = midAngle(pos), alpha = 15*Math.PI/180;
       const rm = (b1+b2)/2, hw = (b2-b1)/2, eff = sc + hv*.035;
@@ -2372,6 +2402,17 @@ window.CW_PRO = {
       c2.lineWidth = IND() ? 2.4 * (W2/BASE) : hasGlow ? (lightMode?2.2:2) : (lightMode?1.6:1.2);
       c2.stroke();
       if (hasGlow) c2.restore();
+      if (IND() && IDLE() === 'code' && (state === 'default' || state === 'dim')) {
+        const bw = 7 * (W2/BASE), ro = isB ? r2 : r1 + bw, ri = isB ? r2 - bw : r1;
+        c2.save();
+        c2.globalAlpha = state === 'dim' ? 0.32 : 1;
+        c2.beginPath();
+        c2.arc(CX2, CY2, ro, saO, eaO);
+        c2.arc(CX2, CY2, ri, eaO, saO, true);
+        c2.closePath();
+        c2.fillStyle = camFill(isB, hue); c2.fill();
+        c2.restore();
+      }
       if (hv > .005) {
         c2.beginPath(); c2.arc(CX2,CY2,r2,saO,eaO); c2.arc(CX2,CY2,r1,eaI,saI,true); c2.closePath();
         c2.fillStyle = lightMode ? `rgba(0,0,0,${.07*hv})` : `rgba(255,255,255,${.10*hv})`;
@@ -3206,6 +3247,13 @@ window.CW_PRO = {
   @media (prefers-reduced-motion: reduce) {
     body.look-ind:not(#_) .chip:hover, body.look-ind:not(#_) .qbtn:hover { transform: none !important; }
   }
+
+  /* Grundzustand „code": Farbkante oben an jeder Taste (B kräftig, A heller) */
+  body.look-ind[data-idle="code"]:not(#_) .qbtn { background-image: linear-gradient(var(--hue) 0 5px, transparent 5px) !important; }
+  body.look-ind[data-idle="code"]:not(#_) .qbtn.ql-dim {
+    background-image: linear-gradient(color-mix(in srgb, var(--hue) 32%, transparent) 0 5px, transparent 5px) !important;
+  }
+  body.look-ind[data-idle="code"]:not(#_) .qbtn[class*="q-"]:not(.ql-dim):not(.q-soft):not(.q-soft2):not(.q-match) { background-image: none !important; }
 </style>
 
 <div id="proSheet" role="dialog" aria-modal="true" aria-labelledby="proTitle" onclick="if(event.target===this)__cw.closeProSheet()">
