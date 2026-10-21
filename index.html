@@ -857,7 +857,7 @@ try{if(localStorage.getItem('cw.look')!=='classic')document.body.classList.add('
 /* Grundfarben im Industrial-Look: 'color' | 'code' | 'grey' – Vorschau: ?idle=code */
 var CW_IDLE_DEFAULT='code';
 (function(){var q=new URLSearchParams(location.search).get('idle');document.body.dataset.idle=/^(color|code|grey)$/.test(q||'')?q:CW_IDLE_DEFAULT})();
-(function(){var m=document.querySelector('meta[name=theme-color]');if(m&&document.body.classList.contains('look-ind'))m.content='#000000'})();</script>
+(function(){var m=document.querySelector('meta[name=theme-color]');if(m&&document.body.classList.contains('look-ind'))m.content=document.body.classList.contains('light-mode')?'#ffffff':'#000000'})();</script>
 <script>
 /* ════════════════════════════════════════════════════════════════════
    FREE / PRO – zentrale Einstellungen (Launch-Plan, Variante B)
@@ -2021,6 +2021,11 @@ window.CW_PRO = {
     draw(); wheel2.draw(); updatePanel(); updateQuick();
   }
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  // Industrial: Browserleiste (theme-color) folgt Hell/Dunkel
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const m = document.querySelector('meta[name=theme-color]');
+    if (m && IND()) m.content = lightMode ? '#ffffff' : '#000000';
+  });
 
   // Look Industrial ↔ Classic: nur Optik, Auswahl/Ansicht/Filter bleiben
   function toggleLook() {
@@ -2028,7 +2033,7 @@ window.CW_PRO = {
     document.body.classList.toggle('look-ind', ind);
     try { localStorage.setItem('cw.look', ind ? 'industrial' : 'classic'); } catch (e) {}
     const m = document.querySelector('meta[name=theme-color]');
-    if (m) m.content = ind ? '#000000' : '#0071e3';
+    if (m) m.content = ind ? (lightMode ? '#ffffff' : '#000000') : '#0071e3';
     isSideMode(currentMode) ? buildSideGrid() : buildQuickGrid();
     applySize(calcSizeForMode(currentMode));           // Kopfhöhe ändert sich
     if (currentMode === 'dual') { wheel2.applySize(calcSizeForMode('dual')); buildDualLegends(); }
@@ -3245,6 +3250,23 @@ window.CW_PRO = {
     body.look-ind:not(#_) .qm-btn svg { width: 11px; height: 15px; }
     body.look-ind:not(#_) .cat-dropdown { left: auto; right: 0; top: calc(100% + 10px); }
     body.look-ind:not(#_) footer { padding: 8px 0 4px; }
+  }
+  /* ── Heller Modus: Kopfbalken invertiert (weiß, schwarze Schrift, schwarze Grundlinie) ── */
+  body.look-ind.light-mode:not(#_) header { background: #fff; color: #000; box-shadow: inset 0 -3px 0 #000; }
+  body.look-ind.light-mode:not(#_) h1 { color: #000; }
+  body.look-ind.light-mode:not(#_) .subtitle { color: #4d4d4d; border-left-color: #cfcfcf; }
+  @media (min-width: 901px) {
+    body.look-ind.light-mode:not(#_) .mode-sep { background: #d6d6d6; }
+    body.look-ind.light-mode:not(#_) .mode-btn, body.look-ind.light-mode:not(#_) .sbar-btn, body.look-ind.light-mode:not(#_) .theme-btn { color: #5c5c5c; }
+    body.look-ind.light-mode:not(#_) .mode-btn:hover, body.look-ind.light-mode:not(#_) .sbar-btn:hover, body.look-ind.light-mode:not(#_) .theme-btn:hover { background: #ececec; color: #000; }
+    body.look-ind.light-mode:not(#_) .mode-btn.active, body.look-ind.light-mode:not(#_) .mode-btn.active:hover, body.look-ind.light-mode:not(#_) .sbar-btn.sbar-active, body.look-ind.light-mode:not(#_) .sbar-btn.sbar-active:hover { background: #000; color: #fff; }
+    body.look-ind.light-mode:not(#_) .mode-kn-label { color: #5c5c5c; }
+    body.look-ind.light-mode:not(#_) .mode-kn-label.kn-on { color: #000; }
+    body.look-ind.light-mode:not(#_) .toggle-track { background: #ececec; border-color: #cfcfcf; }
+    body.look-ind.light-mode:not(#_) .toggle-thumb { background: #8a8a8a; }
+    body.look-ind.light-mode:not(#_) .qm-btn { background: #f2f2f2; color: #1a1a1a; }
+    body.look-ind.light-mode:not(#_) .qm-btn:hover { background: #e3e3e3; color: #000; }
+    body.look-ind.light-mode:not(#_) .qm-btn.qm-active, body.look-ind.light-mode:not(#_) .qm-btn.qm-active:hover { background: var(--gold); color: #1a1200; }
   }
   @media (min-width: 901px) and (max-width: 1240px) {
     body.look-ind:not(#_) .subtitle { display: none; }
