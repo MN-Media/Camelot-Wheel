@@ -855,7 +855,7 @@
 /* Look: 'industrial' (Standard, Website-CI) | 'classic' (Apple). Gespeichert als cw.look */
 try{if(localStorage.getItem('cw.look')!=='classic')document.body.classList.add('look-ind')}catch(e){document.body.classList.add('look-ind')}
 /* Grundfarben im Industrial-Look: 'color' | 'code' | 'grey' – Vorschau: ?idle=code */
-var CW_IDLE_DEFAULT='color';
+var CW_IDLE_DEFAULT='code';
 (function(){var q=new URLSearchParams(location.search).get('idle');document.body.dataset.idle=/^(color|code|grey)$/.test(q||'')?q:CW_IDLE_DEFAULT})();
 (function(){var m=document.querySelector('meta[name=theme-color]');if(m&&document.body.classList.contains('look-ind'))m.content='#000000'})();</script>
 <script>
