@@ -1363,7 +1363,9 @@ window.CW_PRO = {
                : (lightMode ? `hsl(${hue},82%,70%)` : `hsl(${hue},96%,72%)`);
   }
   const HUB = () => IND()
-    ? { fill:'#000', ring:'#000', ink:'#fff', idle: '#8a8a8a', sub:'rgba(255,255,255,.62)' }
+    ? (lightMode   // Mitte = Farbe der gewählten Kachel: hell schwarz, dunkel weiß
+        ? { fill:'#000', ring:'#000', ink:'#fff', idle:'#8a8a8a', sub:'rgba(255,255,255,.62)' }
+        : { fill:'#fff', ring:'#fff', ink:'#000', idle:'#6a6a6a', sub:'rgba(0,0,0,.6)' })
     : { fill: lightMode ? '#f5f5f7' : '#000000', ring: lightMode ? RING_COLOR_LIGHT : RING_COLOR_DARK,
         ink: lightMode ? '#1a1a3a' : '#fff', idle: lightMode ? '#86868b' : '#48484d',
         sub: lightMode ? 'rgba(60,60,120,.55)' : 'rgba(200,200,238,.65)' };
