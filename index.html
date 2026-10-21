@@ -1329,6 +1329,9 @@ window.CW_PRO = {
     if (Math.abs(centerAnim.scale-1)>0.001||Math.abs(centerAnim.vel)>0.005) needsMore=true;
 
     // Quick-mode focus dim — smooth ease toward target
+    const sfT = (selected || (quickMode && qmA)) ? 0 : 1;
+    stripeFade.v += (sfT - stripeFade.v) * Math.min(dt * 4.5, 1);
+    if (Math.abs(stripeFade.v - sfT) > 0.01) needsMore = true; else stripeFade.v = sfT;
     qmFocus.v += (qmFocus.target - qmFocus.v) * Math.min(dt * 6, 1);
     if (Math.abs(qmFocus.v - qmFocus.target) > 0.01) needsMore = true;
     else qmFocus.v = qmFocus.target;
@@ -1474,10 +1477,10 @@ window.CW_PRO = {
     ctx.lineWidth   = IND() ? 2.4 * (W/BASE) : hasGlow ? (lightMode?2.2:2) : (lightMode?1.6:1.2);
     ctx.stroke();
     if (hasGlow) ctx.restore();
-    if (IND() && IDLE() === 'code' && (state === 'default' || state === 'dim')) {
+    if (IND() && IDLE() === 'code' && (state === 'default' || state === 'dim') && stripeFade.v > 0.01) {
       const bw = 7 * (W/BASE), ro = isB ? r2 : r1 + bw, ri = isB ? r2 - bw : r1;
       ctx.save();
-      ctx.globalAlpha = state === 'dim' ? 0.32 : 1;
+      ctx.globalAlpha = stripeFade.v;
       ctx.beginPath();
       ctx.arc(CX, CY, ro, saOuter, eaOuter);
       ctx.arc(CX, CY, ri, eaOuter, saOuter, true);
@@ -2176,6 +2179,8 @@ window.CW_PRO = {
 
   // Animated focus dim (0 = none, 1 = full) — eased in rafTick
   const qmFocus = { v: 0, target: 0 };
+  // Farbkante: nur Orientierung vor der Auswahl – blendet nach dem Klick aus
+  const stripeFade = { v: 1 };
   function qmUpdateFocus() {
     qmFocus.target = !quickMode ? 0 : (qmB ? 0.82 : (qmA ? 0.45 : 0));
   }
@@ -2334,6 +2339,7 @@ window.CW_PRO = {
     const dcats = new Set(['boostLv2','boostLv3','dropLv2','dropLv3']);
     const anim = {}; const cAnim = { scale: 1, vel: 0 };
     let raf = null, ts = 0, t = 0;
+    const sf = { v: 1 };   // Farbkante
 
     function applySize(s) {
       W2 = s; CX2 = s/2; CY2 = s/2;
@@ -2359,6 +2365,9 @@ window.CW_PRO = {
     function tick(now) {
       const dt = Math.min((now - ts)/1000, .05); ts = now; t += dt;
       let more = !!sel;
+      const sfT = sel ? 0 : 1;
+      sf.v += (sfT - sf.v) * Math.min(dt * 4.5, 1);
+      if (Math.abs(sf.v - sfT) > .01) more = true; else sf.v = sfT;
       for (const k of Object.keys(anim)) {
         const a = anim[k];
         const f = -SPRING_K*(a.scale-1) - SPRING_D*a.vel;
@@ -2402,10 +2411,10 @@ window.CW_PRO = {
       c2.lineWidth = IND() ? 2.4 * (W2/BASE) : hasGlow ? (lightMode?2.2:2) : (lightMode?1.6:1.2);
       c2.stroke();
       if (hasGlow) c2.restore();
-      if (IND() && IDLE() === 'code' && (state === 'default' || state === 'dim')) {
+      if (IND() && IDLE() === 'code' && (state === 'default' || state === 'dim') && sf.v > .01) {
         const bw = 7 * (W2/BASE), ro = isB ? r2 : r1 + bw, ri = isB ? r2 - bw : r1;
         c2.save();
-        c2.globalAlpha = state === 'dim' ? 0.32 : 1;
+        c2.globalAlpha = sf.v;
         c2.beginPath();
         c2.arc(CX2, CY2, ro, saO, eaO);
         c2.arc(CX2, CY2, ri, eaO, saO, true);
@@ -3249,11 +3258,16 @@ window.CW_PRO = {
   }
 
   /* Grundzustand „code": Farbkante oben an jeder Taste (B kräftig, A heller) */
-  body.look-ind[data-idle="code"]:not(#_) .qbtn { background-image: linear-gradient(var(--hue) 0 5px, transparent 5px) !important; }
-  body.look-ind[data-idle="code"]:not(#_) .qbtn.ql-dim {
-    background-image: linear-gradient(color-mix(in srgb, var(--hue) 32%, transparent) 0 5px, transparent 5px) !important;
+  body.look-ind[data-idle="code"]:not(#_) .qbtn { position: relative; }
+  body.look-ind[data-idle="code"]:not(#_) .qbtn::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px;
+    background: var(--hue); opacity: 1; pointer-events: none;
+    transition: opacity .55s cubic-bezier(.25,.1,.25,1);
   }
-  body.look-ind[data-idle="code"]:not(#_) .qbtn[class*="q-"]:not(.ql-dim):not(.q-soft):not(.q-soft2):not(.q-match) { background-image: none !important; }
+  /* sobald eine Taste einen Zustand hat (Auswahl, Treffer, abgedunkelt, Quick Check) → Kante aus */
+  body.look-ind[data-idle="code"]:not(#_) .qbtn:is(.ql-dim, .q-sel, .q-clash, .q-soft, .q-soft2, .q-match,
+    .q-perfect, .q-mood, .q-boost1, .q-boost2, .q-boost3, .q-drop1, .q-drop2, .q-drop3)::before { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { body.look-ind[data-idle="code"]:not(#_) .qbtn::before { transition: none; } }
 </style>
 
 <div id="proSheet" role="dialog" aria-modal="true" aria-labelledby="proTitle" onclick="if(event.target===this)__cw.closeProSheet()">
