@@ -899,6 +899,19 @@ window.CW_PRO = {
 };
 </script>
 
+<script>
+/* Handy-App-Rahmen (22.10.2026): auf Touch-Telefonen ein fester Bildschirm statt einer Webseite */
+(function () {
+  var mq = matchMedia('(pointer: coarse) and (max-width: 600px), (pointer: coarse) and (max-height: 500px)');
+  function set() {
+    var on = mq.matches;
+    document.body.classList.toggle('m-app', on);
+    document.body.classList.toggle('m-land', on && innerWidth > innerHeight);
+  }
+  set();
+  addEventListener('resize', set);
+})();
+</script>
 <header>
   <h1><svg class="brand-hex" viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/></svg>Camelot Wheel <span class="tier-tag core-tag">Core</span></h1>
   <p class="subtitle">Harmonic Mixing Tool</p>
@@ -1292,7 +1305,23 @@ window.CW_PRO = {
       - 56;                                // page padding + gaps
   }
 
+  // Handy-App: Rad füllt die Breite, außer die Höhe reicht nicht (dann bekommt der Bereich darunter Vorrang)
+  function mAppSize(mode) {
+    const land = innerWidth > innerHeight;
+    const hgt = sel => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().height : 0; };
+    const hdr = land ? 0 : (hgt('header') || 52);
+    const tab = hgt('#mTabs') || 64;
+    const H = innerHeight - hdr - tab;
+    const Wd = innerWidth - 20;
+    if (mode === 'dual') return Math.floor(land ? Math.min((innerWidth - 40) / 2, H - 14) : Math.min(Wd, (H - 18) / 2));
+    if (land) return Math.floor(Math.max(200, Math.min(H - 14, innerWidth * 0.5)));
+    if (mode === 'no-wheel') return Math.min(BASE, Wd);
+    const need = 246;   // gleicher Platz für Matches und Keys → Rad bleibt beim Umschalten gleich groß
+    return Math.floor(Math.max(220, Math.min(Wd, BASE, H - 48 - need)));
+  }
+
   function calcSizeForMode(mode) {
+    if (document.body.classList.contains('m-app')) return mAppSize(mode);
     if (window.innerWidth <= 900) {        // mobile/tablet: standard behaviour
       switch (mode) {
         case 'no-panel':   return Math.min(580, availWidth());
@@ -1824,6 +1853,12 @@ window.CW_PRO = {
       <div class="chips">${chipRow(codes,cls,off)}</div></div>`;
   }
 
+  function mProLine() {
+    return document.body.classList.contains('m-app') && !isPro()
+      ? '<button type="button" class="m-pro-line" onclick="__cw.openProSheet(\'levels\')">Boost and drop <b>Lv2 + Lv3</b> come with <span class="pro-tag">Pro</span></button>'
+      : '';
+  }
+
   function updatePanel() {
     const panel = document.getElementById('panel');
     if (quickMode) { renderQuickPanel(panel); return; }
@@ -1847,7 +1882,7 @@ window.CW_PRO = {
             <circle r="3.4" fill="var(--accent)"/>
           </g>
         </svg></div>
-        <span>Click on a key<br>in the Wheel or Quick Select</span></div>${buildLegendHTML()}`;
+        <span>${document.body.classList.contains('m-app') ? 'Tap a key<br>on the wheel' : 'Click on a key<br>in the Wheel or Quick Select'}</span></div>${buildLegendHTML()}`;
     } else {
       const pOff=disabledCats.has('perfect'),mOff=disabledCats.has('mood');
       const b1Off=disabledCats.has('boostLv1'),b2Off=disabledCats.has('boostLv2'),b3Off=disabledCats.has('boostLv3');
@@ -1873,7 +1908,7 @@ window.CW_PRO = {
             ${levelRow('Lv1',compat.dropLv1,'drop1',d1Off)}
             ${levelRow('Lv2',compat.dropLv2,'drop2',d2Off)}
             ${levelRow('Lv3',compat.dropLv3,'drop3',d3Off)}</div>
-        </div>${buildLegendHTML()}`;
+        </div>${mProLine()}${buildLegendHTML()}`;
     }
     animatePanel();
   }
@@ -1940,6 +1975,7 @@ window.CW_PRO = {
 
   // ── Side grid: row 1 = all B keys (1–12), row 2 = all A keys (1–12) ──
   function buildSideGrid() {
+    if (document.body.classList.contains('m-app')) { buildQuickGrid(); return; }
     const grid = document.getElementById('quickGrid');
     let html = '';
     for (const L of ['B', 'A']) {
@@ -3628,6 +3664,253 @@ window.CW_PRO = {
         .catch(err => console.warn('[CW] SW error:', err));
     });
   }
+</script>
+<style>
+  /* ═══ Handy-App-Rahmen (m-app) ═══════════════════════════════════════════ */
+  #mTabs, #mSeg, #mSheet { display: none; }
+  body.m-app:not(#m):not(#n) {
+    --m-bg: #000; --m-card: #111; --m-ink: #fff; --m-dim: #8a8a8a; --m-line: #262626; --m-act: #a7ff9c; --m-act-ink: #000; --m-gold: #ffcc33;
+    position: fixed; inset: 0; height: auto; min-height: 0; overflow: hidden; overscroll-behavior: none;
+    display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; flex-wrap: nowrap; gap: 0; padding: 0;
+  }
+  body.m-app.light-mode:not(#m):not(#n) { --m-bg: #fff; --m-card: #f2f2f2; --m-ink: #000; --m-dim: #5c5c5c; --m-line: #d6d6d6; --m-act: #000; --m-act-ink: #fff; }
+  body.m-app:not(#m):not(#n) > header { flex: none; width: 100%; margin: 0; min-height: 0; padding: calc(env(safe-area-inset-top) + 8px) 16px 8px; display: flex; align-items: center; }
+  body.m-app:not(#m):not(#n) .subtitle, body.m-app:not(#m):not(#n) .controls-row, body.m-app:not(#m):not(#n) > footer { display: none; }
+  body.m-app:not(#m):not(#n) .layout {
+    flex: 1 1 auto; min-height: 0; width: 100%; max-width: none; margin: 0; padding: 8px 10px 0; gap: 0;
+    display: flex; flex-direction: column; align-items: center; flex-wrap: nowrap; overflow: hidden;
+  }
+  body.m-app:not(#m):not(#n) .wheel-col { flex: none; gap: 8px; }
+  body.m-app:not(#m):not(#n) .wheel-legend { display: none; }
+
+  /* Umschalter Matches / Keys */
+  body.m-app:not(#m):not(#n) #mSeg { display: flex; flex: none; width: 100%; max-width: 460px; margin: 10px 0 6px; border: 2px solid var(--m-ink); }
+  body.m-app.quick-mode:not(#m):not(#n) #mSeg, body.m-app.mode-dual:not(#m):not(#n) #mSeg, body.m-app.mode-no-wheel:not(#m):not(#n) #mSeg { display: none; }
+  #mSeg button { flex: 1; height: 34px; border: 0; background: transparent; color: var(--m-ink); font: 600 .78rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+  #mSeg button[aria-selected="true"] { background: var(--m-act); color: var(--m-act-ink); }
+
+  /* Matches: eine Zeile je Kategorie */
+  body.m-app:not(#m):not(#n) .panel { flex: 1 1 auto; min-height: 0; width: 100%; max-width: 460px; height: auto; overflow-y: auto; overscroll-behavior: contain; padding: 8px 12px 12px; margin: 0; }
+  body.m-app:not(#m):not(#n) .panel .sel-header, body.m-app:not(#m):not(#n) .panel .legend { display: none; }
+  body.m-app:not(#m):not(#n) .panel { justify-content: flex-start; }
+  body.m-app:not(#m):not(#n) .panel > * { flex: none; }
+  body.m-app:not(#m):not(#n) .cats-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0; }
+  body.m-app:not(#m):not(#n) .cat { display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 4px; margin: 0; padding: 3px 0; border: 0; }
+  body.m-app:not(#m):not(#n) .cat-head { grid-column: 1; grid-row: 1; align-self: center; margin: 0; padding: 0; border: 0; font-size: .62rem; line-height: 1.2; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.m-app:not(#m):not(#n) .cat-head::after { display: none; }
+  body.m-app:not(#m):not(#n) .sublevel { grid-column: 2; display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; min-height: 0; }
+  body.m-app:not(#m):not(#n) .sublevel-off { display: none; }
+  body.m-app:not(#m):not(#n) .lv-tag { width: 24px; flex: none; font-size: .58rem; }
+  body.m-app:not(#m):not(#n) .lv-tag:empty { display: none; }
+  body.m-app:not(#m):not(#n) .chips { gap: 6px; }
+  body.m-app:not(#m):not(#n) .chip { min-width: 46px; height: 32px; font-size: .82rem; }
+  body.m-app:not(#m):not(#n) .empty-state { padding: 12px 0; gap: 8px; }
+  body.m-app:not(#m):not(#n) .empty-icon { transform: scale(.8); }
+  .m-pro-line { display: block; width: 100%; margin-top: 10px; padding: 10px 12px; border: 0; text-align: left; background: transparent; color: var(--m-dim, #8a8a8a); font: inherit; font-size: .74rem; box-shadow: inset 3px 0 0 var(--m-gold, #ffcc33); cursor: pointer; }
+  .m-pro-line b { color: var(--m-ink, #fff); }
+
+  /* Keys: zwei Blöcke 1–6 und 7–12, deutlich getrennt */
+  body.m-app:not(#m):not(#n) .quick-wrap { display: none; }
+  body.m-app.mode-no-panel:not(#m):not(#n) .quick-wrap, body.m-app.mode-no-wheel:not(#m):not(#n) .quick-wrap {
+    display: block; flex: 1 1 auto; min-height: 0; width: 100%; max-width: 460px; min-width: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 4px 0 10px;
+  }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .quick-wrap { flex: none; }
+  body.m-app:not(#m):not(#n) .quick-label { display: none; }
+  body.m-app:not(#m):not(#n) .quick-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; column-gap: 6px; row-gap: 16px; width: 100%; }
+  body.m-app:not(#m):not(#n) .qkey { display: grid; gap: 5px; }
+  body.m-app:not(#m):not(#n) .pos-num { font-size: .62rem; line-height: 1; }
+  body.m-app:not(#m):not(#n) .qbtn { height: 40px; min-height: 40px; font-size: .8rem; }
+
+  /* Dual: hochkant untereinander, ohne Legenden (Kategorien im Einstellungs-Blatt) */
+  body.m-app.mode-dual:not(#m):not(#n) .layout { justify-content: center; gap: 10px; }
+
+  /* Querformat: Rad links, Bereich rechts; Dual nebeneinander */
+  body.m-app.m-land:not(#m):not(#n) > header { display: none; }
+  body.m-app.m-land:not(#m):not(#n) .layout {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 18px; align-items: start; justify-items: stretch;
+    padding: 8px calc(env(safe-area-inset-right) + 12px) 0 calc(env(safe-area-inset-left) + 12px);
+  }
+  body.m-app.m-land:not(#m):not(#n) .wheel-col > canvas { grid-column: 1; grid-row: 1 / span 2; align-self: center; }
+  body.m-app.m-land:not(#m):not(#n) #mSeg { grid-column: 2; grid-row: 1; margin: 0 0 6px; max-width: none; }
+  body.m-app.m-land:not(#m):not(#n) .panel, body.m-app.m-land:not(#m):not(#n) .quick-wrap { grid-column: 2; grid-row: 2; max-width: none; height: 100%; }
+  body.m-app.m-land.quick-mode:not(#m):not(#n) .panel { grid-row: 1 / span 2; }
+  body.m-app.m-land.mode-dual:not(#m):not(#n) .layout { grid-template-columns: auto auto; grid-template-rows: minmax(0, 1fr); justify-content: center; align-items: center; }
+  body.m-app.m-land.mode-dual:not(#m):not(#n) .wheel-col > canvas { grid-row: 1; }
+  body.m-app.m-land.mode-dual:not(#m):not(#n) #wheel2 { grid-column: 2; }
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .panel { grid-row: 1; grid-column: 1; }
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .quick-wrap { grid-row: 1; grid-column: 2; }
+
+  /* Untere Leiste */
+  body.m-app:not(#m):not(#n) #mTabs {
+    display: flex; flex: none; width: 100%; gap: 2px; background: var(--m-bg); border-top: 2px solid var(--m-line);
+    padding: 6px calc(env(safe-area-inset-right) + 6px) calc(env(safe-area-inset-bottom) + 6px) calc(env(safe-area-inset-left) + 6px);
+  }
+  #mTabs button { position: relative; flex: 1; min-width: 0; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: var(--m-dim); font: 600 .6rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+  #mTabs svg { width: 30px; height: 20px; }
+  #mTabs .mt-quick svg { width: 12px; height: 18px; }
+  #mTabs .mt-set svg { width: 20px; height: 20px; }
+  #mTabs button.on { background: var(--m-act); color: var(--m-act-ink); }
+  #mTabs .mt-quick.on { background: var(--m-gold); color: #1a1200; }
+  #mTabs .m-pro { position: absolute; top: 3px; right: 6px; padding: 1px 4px; background: var(--m-gold); color: #1a1200; font-size: .5rem; letter-spacing: .04em; }
+  body.m-land #mTabs button { height: 44px; flex-direction: row; gap: 8px; }
+
+  /* Tipp-Karte (antippen und halten) über der unteren Leiste */
+  body.m-app #cwTip.tip-touch { bottom: calc(env(safe-area-inset-bottom) + 78px); }
+  body.m-land #cwTip.tip-touch { bottom: calc(env(safe-area-inset-bottom) + 64px); }
+
+  /* Einstellungen als Blatt von unten */
+  body.m-app #mSheet:not([hidden]) { display: flex; position: fixed; inset: 0; z-index: 9000; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .55); }
+  #mSheet .ms-card { width: 100%; max-width: 560px; max-height: 84dvh; overflow-y: auto; overscroll-behavior: contain; background: var(--m-card); color: var(--m-ink); border-top: 4px solid var(--m-act); padding: 18px 18px calc(env(safe-area-inset-bottom) + 18px); animation: ms-up .26s cubic-bezier(.25, .46, .45, .94) both; }
+  @keyframes ms-up { from { transform: translateY(24px); opacity: 0; } }
+  #mSheet .ms-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-family: var(--f-display, inherit); font-size: 1.6rem; line-height: 1; text-transform: uppercase; }
+  #mSheet .ms-close { width: 40px; height: 40px; border: 2px solid var(--m-ink); background: transparent; color: var(--m-ink); font: 700 1rem/1 system-ui, sans-serif; cursor: pointer; }
+  #mSheet .ms-row { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 50px; padding: 0; border: 0; border-bottom: 1px solid var(--m-line); background: transparent; color: var(--m-ink); font: 600 .9rem/1.2 var(--f-text, system-ui, sans-serif); text-align: left; cursor: pointer; }
+  #mSheet .ms-row span:last-child { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; padding: 5px 9px; background: var(--m-line); color: var(--m-ink); }
+  #mSheet .ms-row[aria-checked="true"] span:last-child { background: var(--m-act); color: var(--m-act-ink); }
+  #mSheet .ms-sub { margin: 18px 0 8px; font: 700 .68rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--m-dim); }
+  #mSheet .cat-dropdown { position: static !important; transform: none !important; display: grid !important; width: auto !important; max-width: none !important; margin: 0 !important; left: auto !important; top: auto !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; background: transparent !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
+  #mSheet .wheel-legend { display: grid !important; margin: 0 0 6px; }
+</style>
+<script>
+  // Handy-App-Rahmen: untere Leiste, Matches/Keys, Einstellungs-Blatt. Nutzt die vorhandenen Ansichten:
+  // Matches = „default“, Keys = „no-panel“, Grid = „no-wheel“, Dual = „dual“.
+  (() => {
+    const $ = s => document.querySelector(s);
+    const body = document.body, layout = $('.layout'), panel = $('#panel'), qmBtn = $('#qm-btn');
+    const modeBtn = m => $(`.mode-btn[data-mode="${m}"]`);
+    const isPro = () => window.CW_PRO.isPro();
+    const curMode = () => (body.className.match(/\bmode-([a-z-]+)/) || [])[1] || 'default';
+    const quick = () => body.classList.contains('quick-mode');
+    let view = 'default';
+    try { if (localStorage.getItem('cw.mview') === 'no-panel') view = 'no-panel'; } catch (e) {}
+
+    // Umschalter Matches / Keys (zwischen Rad und Bereich)
+    const seg = document.createElement('div');
+    seg.id = 'mSeg'; seg.setAttribute('role', 'tablist'); seg.setAttribute('aria-label', 'Show');
+    seg.innerHTML = '<button type="button" role="tab" data-v="default">Matches</button><button type="button" role="tab" data-v="no-panel">Keys</button>';
+    layout.insertBefore(seg, panel);
+
+    // Untere Leiste
+    const icon = sel => { const e = $(sel); const s = e && e.querySelector('svg'); return s ? s.outerHTML : ''; };
+    const tabs = document.createElement('nav');
+    tabs.id = 'mTabs'; tabs.setAttribute('aria-label', 'Views');
+    tabs.innerHTML =
+      `<button type="button" data-t="wheel">${icon('.mode-btn[data-mode="default"]')}<span>Wheel</span></button>` +
+      `<button type="button" data-t="dual">${icon('.mode-btn[data-mode="dual"]')}<span>Dual</span></button>` +
+      `<button type="button" data-t="grid">${icon('.mode-btn[data-mode="no-wheel"]')}<span>Grid</span></button>` +
+      `<button type="button" data-t="quick" class="mt-quick">${icon('#qm-btn')}<span>Quick</span></button>` +
+      `<button type="button" data-t="set" class="mt-set">${icon('#cat-btn')}<span>Settings</span></button>`;
+    body.appendChild(tabs);
+
+    // Einstellungs-Blatt
+    const sheet = document.createElement('div');
+    sheet.id = 'mSheet'; sheet.hidden = true;
+    sheet.innerHTML = `<div class="ms-card" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="ms-head">Settings<button type="button" class="ms-close" aria-label="Close">✕</button></div>
+      <button type="button" class="ms-row" role="switch" data-s="kn"><span>Key names (8A = A minor)</span><span></span></button>
+      <button type="button" class="ms-row" role="switch" data-s="light"><span>Light mode</span><span></span></button>
+      <button type="button" class="ms-row" data-s="look"><span>Design</span><span></span></button>
+      <button type="button" class="ms-row" data-s="info"><span>About, install and shortcuts</span><span>Open</span></button>
+      <div class="ms-sub" data-sub></div>
+      <div class="ms-cats"></div></div>`;
+    body.appendChild(sheet);
+    const cats = sheet.querySelector('.ms-cats'), sub = sheet.querySelector('[data-sub]');
+    const parked = [];   // verschobene Elemente samt Herkunft
+    const park = el => { if (!el) return; parked.push([el, el.parentNode, el.nextSibling]); cats.appendChild(el); };
+    function syncSheet() {
+      const kn = $('#kn-toggle');
+      const set = (k, on, txt) => { const r = sheet.querySelector(`[data-s="${k}"]`); if (on !== null) r.setAttribute('aria-checked', String(on)); r.lastElementChild.textContent = txt; };
+      set('kn', !!(kn && kn.checked), kn && kn.checked ? 'On' : 'Off');
+      set('light', body.classList.contains('light-mode'), body.classList.contains('light-mode') ? 'On' : 'Off');
+      set('look', null, body.classList.contains('look-ind') ? 'Industrial' : 'Classic');
+    }
+    function openSheet() {
+      if (curMode() === 'dual') {
+        const land = body.classList.contains('m-land');
+        sub.textContent = 'Match categories';
+        const h1 = document.createElement('div'); h1.className = 'ms-sub'; h1.textContent = land ? 'Left wheel' : 'Top wheel';
+        const h2 = document.createElement('div'); h2.className = 'ms-sub'; h2.textContent = land ? 'Right wheel' : 'Bottom wheel';
+        cats.append(h1); park($('#legendL')); cats.append(h2); park($('#legendR'));
+      } else {
+        sub.textContent = 'Match categories';
+        const dd = $('#catDropdown');
+        if (dd) { dd.classList.add('open'); park(dd); }
+      }
+      syncSheet();
+      sheet.hidden = false;
+    }
+    function closeSheet() {
+      while (parked.length) { const [el, par, nx] = parked.pop(); par.insertBefore(el, nx); if (el.id === 'catDropdown') el.classList.remove('open'); }
+      cats.innerHTML = '';
+      sheet.hidden = true;
+    }
+    sheet.addEventListener('click', e => {
+      if (e.target === sheet || e.target.closest('.ms-close')) { closeSheet(); return; }
+      const row = e.target.closest('.ms-row'); if (!row) return;
+      const s = row.dataset.s;
+      if (s === 'kn') $('#kn-toggle').click();
+      if (s === 'light') $('#theme-toggle').click();
+      if (s === 'look') $('#look-btn').click();
+      if (s === 'info') { closeSheet(); $('#info-btn').click(); return; }
+      setTimeout(syncSheet, 30);
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+
+    // Ansicht wechseln (Quick Check vorher beenden; setMode wartet sonst)
+    function go(mode) {
+      if (mode === 'dual' && !isPro()) { modeBtn('dual').click(); return; }
+      const run = () => { if (curMode() !== mode) modeBtn(mode).click(); };
+      if (quick()) { qmBtn.click(); setTimeout(run, 300); } else run();
+    }
+    tabs.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const t = b.dataset.t;
+      if (t === 'wheel') go(view);
+      if (t === 'dual') go('dual');
+      if (t === 'grid') go('no-wheel');
+      if (t === 'quick') qmBtn.click();
+      if (t === 'set') openSheet();
+    });
+    seg.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      view = b.dataset.v;
+      try { localStorage.setItem('cw.mview', view); } catch (err) {}
+      go(view);
+      sync();
+    });
+
+    // Zustand der Leiste und des Umschalters
+    function sync() {
+      const m = curMode(), q = quick();
+      const on = q ? 'quick' : m === 'dual' ? 'dual' : m === 'no-wheel' ? 'grid' : 'wheel';
+      tabs.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.t === on); if (b.dataset.t !== 'set') b.setAttribute('aria-pressed', String(b.dataset.t === on)); });
+      const sv = m === 'no-panel' ? 'no-panel' : 'default';
+      seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.v === sv)));
+      tabs.querySelectorAll('[data-t="dual"], [data-t="quick"]').forEach(b => {
+        let tag = b.querySelector('.m-pro');
+        if (!isPro() && !tag) { tag = document.createElement('span'); tag.className = 'm-pro'; tag.textContent = 'Pro'; b.append(tag); }
+        if (isPro() && tag) tag.remove();
+      });
+    }
+    new MutationObserver(sync).observe(body, { attributes: true, attributeFilter: ['class'] });
+
+    // Start im Handy-Rahmen: gemerkte Ansicht, „nur Rad“ gibt es dort nicht; danach Rad neu bemessen
+    let wasApp = null;
+    function enter() {
+      const app = body.classList.contains('m-app');
+      if (app === wasApp) return;
+      wasApp = app;
+      if (app) {
+        const m = curMode();
+        if (m === 'wheel-only' || (m === 'default' && view === 'no-panel')) go(view);
+      } else closeSheet();
+      setTimeout(() => dispatchEvent(new Event('resize')), 60);
+    }
+    addEventListener('resize', () => setTimeout(enter, 0));
+    sync(); enter();
+  })();
 </script>
 </body>
 </html>
