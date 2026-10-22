@@ -15,7 +15,9 @@
 
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -3322,6 +3324,58 @@ window.CW_PRO = {
   </div>
 </div>
 
+<style>
+  /* Install-Hinweis im Info-Fenster (22.10.2026) */
+  .info-install { margin: 18px 0 6px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; }
+  .info-install .ii-head { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .info-install p { font-size: .81rem; line-height: 1.5; margin: 0 0 10px; }
+  .info-install .ii-done { font-weight: 700; margin: 0; }
+  .info-install.is-installed .ii-lead, .info-install.is-installed .ii-list, .info-install.is-installed .ii-btn { display: none; }
+  .ii-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .8rem; line-height: 1.45; }
+  .ii-list li { display: grid; grid-template-columns: 112px 1fr; gap: 10px; padding: 6px 8px; }
+  .ii-list b { font-weight: 700; }
+  .ii-list li.ii-here { background: rgba(127,127,127,.14); }
+  .ii-list li.ii-here b::after { content: "This device"; display: block; font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .7; margin-top: 2px; }
+  .ii-list li.ii-warn span { opacity: .85; }
+  .info-install.has-here:not(.show-all) .ii-list li:not(.ii-here) { display: none; }
+  .ii-more { margin-top: 8px; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: .78rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; opacity: .8; }
+  .info-install.is-installed .ii-more { display: none; }
+  .ii-btn { margin: 0 0 12px; padding: 9px 14px; border: 0; border-radius: 8px; background: var(--text); color: var(--bg, #000); font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+  @media (max-width: 520px) { .ii-list li { grid-template-columns: 1fr; gap: 2px; } }
+  body.look-ind:not(#_) .info-install, body.look-ind.light-mode:not(#_) .info-install { border: 0; border-radius: 0; background: var(--bg); box-shadow: inset 6px 0 0 var(--mint); padding: 16px 18px 16px 24px; }
+  body.look-ind:not(#_) .info-install .ii-head { font-family: var(--f-display); font-weight: 400; font-size: 1.35rem; letter-spacing: 0; line-height: 1; }
+  body.look-ind:not(#_) .ii-list li.ii-here { background: var(--mint); color: #000; }
+  body.look-ind:not(#_) .ii-btn { border-radius: 0; background: var(--mint); color: #000; }
+</style>
+<script>
+  // Install-Hinweis: eigenes Gerät markieren, installierte App erkennen, Installieren-Knopf (Chrome/Edge/Android)
+  document.addEventListener('DOMContentLoaded', () => {
+    const box = document.getElementById('infoInstall');
+    if (!box) return;
+    const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const android = /Android/.test(ua);
+    const ff = /Firefox|FxiOS/.test(ua);
+    const mac = !ios && /Macintosh/.test(ua);
+    const win = /Windows/.test(ua);
+    const linux = !android && /Linux|CrOS/.test(ua);
+    const here = ios ? 'ios' : android ? 'android' : (ff && (mac || linux)) ? 'ff' : mac ? 'mac' : win ? 'win' : null;
+    const li = here && box.querySelector(`[data-ii="${here}"]`);
+    const more = box.querySelector('.ii-more');
+    if (li) {
+      li.classList.add('ii-here'); li.parentElement.prepend(li);
+      box.classList.add('has-here'); more.hidden = false;
+      more.addEventListener('click', () => { const open = box.classList.toggle('show-all'); more.setAttribute('aria-expanded', String(open)); more.textContent = open ? 'Only this device' : 'Other devices'; });
+    }
+    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (standalone) { box.classList.add('is-installed'); box.querySelector('.ii-done').hidden = false; }
+    const btn = document.getElementById('infoInstallBtn');
+    let deferred = null;
+    addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; btn.hidden = false; });
+    btn.addEventListener('click', async () => { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (_) {} deferred = null; btn.hidden = true; });
+    addEventListener('appinstalled', () => { btn.hidden = true; box.classList.add('is-installed'); box.querySelector('.ii-done').hidden = false; });
+  });
+</script>
 <div id="infoModal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="info-card">
 
@@ -3329,6 +3383,21 @@ window.CW_PRO = {
 
     <h2>Camelot Wheel <span class="tier-tag core-tag">Core</span></h2>
     <div class="info-sub">Harmonic Mixing Reference</div>
+
+    <section class="info-install" id="infoInstall" aria-labelledby="infoInstallH">
+      <div class="ii-head" id="infoInstallH">Use it in the browser – or install it as an app</div>
+      <p class="ii-lead">Nothing to install: Camelot Wheel runs in any current browser and keeps working offline once it has loaded. Installing only gives it its own icon and window.</p>
+      <p class="ii-done" hidden>✓ Installed – you are using the app version.</p>
+      <button class="ii-btn" type="button" id="infoInstallBtn" hidden>Install now</button>
+      <ul class="ii-list">
+        <li data-ii="ios"><b>iPhone &amp; iPad</b><span>Safari: tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</span></li>
+        <li data-ii="android"><b>Android</b><span>Chrome: menu <strong>⋮</strong> → <strong>Install app</strong> (or <em>Add to Home screen</em>).</span></li>
+        <li data-ii="mac"><b>Mac</b><span>Safari (macOS 14+): <strong>File → Add to Dock</strong>. Chrome or Edge: <strong>install icon</strong> at the right end of the address bar.</span></li>
+        <li data-ii="win"><b>Windows</b><span>Chrome or Edge: <strong>install icon</strong> in the address bar. Firefox (newer versions): <strong>Add tab to taskbar</strong> in the address bar.</span></li>
+        <li data-ii="ff" class="ii-warn"><b>Firefox on Mac / Linux</b><span>Can't install web apps. Just keep the tab – everything works the same.</span></li>
+      </ul>
+      <button class="ii-more" type="button" hidden aria-expanded="false">Other devices</button>
+    </section>
 
     <p>The standard Camelot wheel gives you three compatibility types: same key, one step adjacent, and relative major/minor. Camelot Wheel expands this to <strong>8 directional match categories</strong> (Core includes level 1 of each energy direction, <span class="pro-tag" style="font-size:inherit;letter-spacing:inherit;">Pro</span> adds levels 2 and 3) — letting you plan not just <em>which</em> keys mix, but <em>how</em> the energy of a set moves with each transition.</p>
 

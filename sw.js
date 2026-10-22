@@ -1,7 +1,7 @@
 // Camelot Wheel Pro — Service Worker
 // Cache-first strategy for full offline support
 
-const CACHE_NAME = 'camelot-wheel-v4';
+const CACHE_NAME = 'camelot-wheel-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -9,6 +9,9 @@ const ASSETS = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
+  '/favicon.ico',
+  '/favicon.svg',
+  '/favicon-32.png',
 ];
 
 // ── Install: pre-cache all assets ───────────────────────────────────────
