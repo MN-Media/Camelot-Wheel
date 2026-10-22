@@ -710,6 +710,10 @@
       box-shadow: 0 6px 24px rgba(0,0,0,.14);
     }
     body.light-mode #cwTip .tip-body { color: rgba(0,0,20,.65); }
+    /* Touch: Tipp als Karte unten (Finger verdeckt sonst die Stelle) */
+    #cwTip.tip-touch { left: 50%; top: auto; bottom: calc(18px + env(safe-area-inset-bottom)); width: max-content; max-width: min(92vw, 380px); transform: translate(-50%, 8px); font-size: .82rem; }
+    #cwTip.tip-touch.tip-visible { transform: translate(-50%, 0); }
+    canvas, .qbtn, .chip { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
     /* ══════════════════════════════════════════════════
        MOBILE & TOUCH SUPPORT
@@ -729,7 +733,7 @@
       .sbar-btn.sbar-active,
       .sbar-btn.sbar-active:hover { background: rgba(41,151,255,.12); color: var(--accent); }
       .leg-item:hover    { opacity: 1; }
-      #cwTip             { display: none; }  /* hover tips are pointless on touch */
+      #cwTip:not(.tip-touch) { display: none; }  /* Hover-Tipps gibt es auf Touch nicht – dort Karte per Halten */
     }
 
     /* ── Tablets & small laptops ≤ 880px ──────────────── */
@@ -1147,6 +1151,76 @@ window.CW_PRO = {
     const el = document.getElementById('cwTip');
     if (el) el.classList.remove('tip-visible');
   }
+
+  // ── Mixing Tips auf Touch-Geräten: antippen und halten (es gibt kein Hover) ──
+  // Halten (~0,45 s) auf einer leuchtenden Tonart – Rad, Dual-Rad, Liste, Quick Select – zeigt den Tipp
+  // als Karte unten am Bildschirm; der Tipp ersetzt dann den Klick (keine Auswahl beim Loslassen).
+  const LP_RESOLVE = new Map();   // weitere Räder melden hier ihre Trefferlogik an (Dual-Rad)
+  function tipLabel() { return TOUCH_ONLY ? 'Mixing Tips (tap &amp; hold)' : 'Mixing Tips on hover'; }
+  let tipTouchTimer = null;
+  function showTipTouch(state, intro) {
+    const el = document.getElementById('cwTip');
+    const t = intro
+      ? { cat: 'Mixing Tips on', color: '#ffffff', body: 'Tap and hold a lit key – on the wheel, in the list or in Quick Select – to see what that move does to the energy.' }
+      : MIX_TIPS[state];
+    if (!t || !el) return;
+    const catEl = document.getElementById('cwTipCat');
+    catEl.textContent = t.cat;
+    catEl.style.color = t.color;
+    document.getElementById('cwTipBody').textContent = t.body;
+    el.style.left = ''; el.style.top = '';
+    el.classList.add('tip-touch', 'tip-visible');
+    clearTimeout(tipTouchTimer);
+    tipTouchTimer = setTimeout(hideTip, intro ? 4800 : 3800);
+  }
+  function showTouchHint() { showTipTouch(null, true); }
+  (() => {
+    if (!matchMedia('(any-pointer: coarse)').matches) return;
+    let timer = null, sx = 0, sy = 0, shownAt = 0, held = false, swallow = 0;
+    const resolve = (el, x, y) => {
+      if (!el) return null;
+      if (el.id === 'wheel') {
+        if (quickMode || !selected) return null;
+        const code = hitSegment(x, y);
+        if (!code || code === selected) return null;
+        const st = stateOf(code, selected, compat);
+        return MIX_TIPS[st] ? st : null;
+      }
+      const r = LP_RESOLVE.get(el);
+      if (r) return r(x, y);
+      const b = el.closest && el.closest('.qbtn, .chip');
+      if (b && !b.classList.contains('chip-off')) { const c = b.dataset.cat; return c && MIX_TIPS[c] ? c : null; }
+      return null;
+    };
+    document.addEventListener('touchstart', e => {
+      clearTimeout(timer);
+      held = false; swallow = 0;   // neue Berührung: vorheriges Halten zählt nicht mehr
+      if (!tipsEnabled || e.touches.length !== 1) return;
+      if (Date.now() - shownAt > 900) hideTip();
+      const tch = e.touches[0], target = e.target;
+      sx = tch.clientX; sy = tch.clientY;
+      timer = setTimeout(() => {
+        const st = resolve(target, sx, sy);
+        if (!st) return;
+        held = true; shownAt = Date.now();
+        showTipTouch(st);
+        if (navigator.vibrate) navigator.vibrate(8);
+      }, 450);
+    }, { passive: true });
+    document.addEventListener('touchmove', e => {
+      const tch = e.touches[0];
+      if (tch && Math.hypot(tch.clientX - sx, tch.clientY - sy) > 10) clearTimeout(timer);
+    }, { passive: true });
+    document.addEventListener('touchend', e => {
+      clearTimeout(timer);
+      if (held) { e.preventDefault(); swallow = Date.now(); held = false; }   // kein Klick nach dem Halten
+    }, { passive: false });
+    document.addEventListener('touchcancel', () => clearTimeout(timer), { passive: true });
+    document.addEventListener('click', e => {
+      if (swallow && Date.now() - swallow < 700) { e.preventDefault(); e.stopPropagation(); swallow = 0; }
+    }, true);
+    document.addEventListener('contextmenu', e => { if (tipsEnabled && e.target.closest && e.target.closest('canvas, .qbtn, .chip')) e.preventDefault(); });
+  })();
 
   function stateOf(code, sel, compat, dcats = disabledCats) {
     if (!sel) return 'default';
@@ -1962,6 +2036,7 @@ window.CW_PRO = {
   function toggleTips() {
     tipsEnabled = !tipsEnabled;
     if (!tipsEnabled) hideTip();
+    else if (TOUCH_ONLY) showTouchHint();
     // update the tips row in the dropdown
     const row = document.getElementById('tipToggleRow');
     if (row) row.classList.toggle('cat-off', !tipsEnabled);
@@ -1985,7 +2060,7 @@ window.CW_PRO = {
               onclick="__cw.toggleTips()"
               style="--cc:${tipColor}">
            <div class="cat-drop-dot" style="background:${tipColor};border-radius:50%"></div>
-           <span class="cat-drop-name">Mixing Tips on hover</span>
+           <span class="cat-drop-name">${tipLabel()}</span>
            <div class="cat-drop-pill" style="border-color:${tipColor};color:${tipColor}"></div>
          </div>`;
   }
@@ -2531,6 +2606,12 @@ window.CW_PRO = {
       if (hov) { hov = null; cv.style.cursor = 'default'; targets(); kick(); }
       hideTip();
     });
+    LP_RESOLVE.set(cv, (x, y) => {
+      const code = hit(x, y);
+      if (!sel || !code || code === sel) return null;
+      const st = stateOf(code, sel, cmp, dcats);
+      return MIX_TIPS[st] ? st : null;
+    });
 
     function toggleCat(cat) {
       dcats.has(cat) ? dcats.delete(cat) : dcats.add(cat);
@@ -2560,7 +2641,7 @@ window.CW_PRO = {
     }).join('');
     const tipColor = 'rgba(180,180,220,.7)';
     const tipsRow = `<div class="leg-item${tipsEnabled?'':' leg-off'}" style="--tc:${tipColor};grid-column:1 / -1" onclick="__cw.toggleTipsDual()">
-      <div class="leg-dot" style="background:${tipsEnabled?tipColor:'#232327'};border-radius:50%"></div>Mixing Tips on hover
+      <div class="leg-dot" style="background:${tipsEnabled?tipColor:'#232327'};border-radius:50%"></div>${tipLabel()}
       <div class="leg-mini-pill"></div></div>`;
     const L = document.getElementById('legendL'), R = document.getElementById('legendR');
     if (L) L.innerHTML = mk(disabledCats, 'toggleCatL') + tipsRow;
@@ -3141,6 +3222,7 @@ window.CW_PRO = {
   body.look-ind.light-mode:not(#_) #cwTip { background: #000; border: 0; box-shadow: none; }
   body.look-ind:not(#_) #cwTip .tip-cat { font-family: var(--f-display); font-weight: 400; font-size: 1.15rem; letter-spacing: 0; line-height: 1; margin-bottom: 6px; }
   body.look-ind:not(#_) #cwTip .tip-body, body.look-ind.light-mode:not(#_) #cwTip .tip-body { color: #e6e6e6; }
+  body.look-ind:not(#_) #cwTip.tip-touch { padding-left: 22px; box-shadow: inset 6px 0 0 var(--mint), 0 12px 32px rgba(0,0,0,.45); }
 
   /* ── Info- und Pro-Fenster ─────────────────────────────────────────── */
   body.look-ind:not(#_) #infoModal, body.look-ind:not(#_) #proSheet { background: rgba(0,0,0,.72); backdrop-filter: none; -webkit-backdrop-filter: none; }
