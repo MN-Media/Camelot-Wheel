@@ -940,13 +940,14 @@ window.CW_PRO = {
     }
     var v = {};
     if (side) {
-      var isl = Math.max(8, (side === 'l' ? raw.l : raw.r) - 10);   // Leiste bis an die Island, Inhalt der Leiste daneben
-      v = side === 'l' ? { rl: isl, rr: 8, cl: 14, cr: 16, sr: 18 } : { rl: 8, rr: isl, cl: 16, cr: 14, sr: isl + 10 };
+      /* Leiste an der Island (23.10.2026): Island endet ca. 11 pt vor dem gemeldeten Abstand → Leisteninhalt direkt daneben */
+      var isl = Math.max(8, (side === 'l' ? raw.l : raw.r) - 12);
+      v = side === 'l' ? { rl: isl, rr: 6, cl: 12, cr: 12, sr: 18 } : { rl: 6, rr: isl, cl: 12, cr: 12, sr: isl + 10 };
     } else if (land) {
       v = { rl: 8, rr: Math.max(8, raw.r), cl: Math.max(14, raw.l), cr: 14, sr: Math.max(18, raw.r) };
     }
     if (land) {
-      st.setProperty('--m-rl', v.rl + 'px'); st.setProperty('--m-rr', v.rr + 'px'); st.setProperty('--m-rw', (80 + v.rl + v.rr) + 'px');
+      st.setProperty('--m-rl', v.rl + 'px'); st.setProperty('--m-rr', v.rr + 'px'); st.setProperty('--m-rw', (64 + v.rl + v.rr) + 'px');
       st.setProperty('--m-cl', v.cl + 'px'); st.setProperty('--m-cr', v.cr + 'px'); st.setProperty('--m-sr', v.sr + 'px');
       st.setProperty('--m-ib', raw.b + 'px');
     } else ['--m-rl', '--m-rr', '--m-rw', '--m-cl', '--m-cr', '--m-sr', '--m-ib'].forEach(function (k) { st.removeProperty(k); });
@@ -3801,6 +3802,10 @@ window.CW_PRO = {
   body.m-app:not(#m):not(#n) .panel .sel-header, body.m-app:not(#m):not(#n) .panel .legend { display: none; }
   body.m-app:not(#m):not(#n) .panel { justify-content: flex-start; }
   body.m-app:not(#m):not(#n) .panel > * { flex: none; }
+  /* Clean (23.10.2026): keine graue Fläche hinter Matches, Hinweis und Quick Check – schwarz wie die Seite */
+  body.m-app:not(#m):not(#n) .panel { background: transparent; border: 0; border-radius: 0; }
+  body.m-app:not(#m):not(#n) .panel { box-shadow: none; }
+  body.m-app.look-ind.quick-mode:not(#m):not(#n) .panel { box-shadow: inset 0 6px 0 var(--gold); }
   body.m-app:not(#m):not(#n) .cats-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0; }
   body.m-app:not(#m):not(#n) .cat { display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 4px; margin: 0; padding: 3px 0; border: 0; }
   body.m-app:not(#m):not(#n) .cat-head { grid-column: 1; grid-row: 1; align-self: center; margin: 0; padding: 0; border: 0; font-size: .62rem; line-height: 1.2; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -3896,7 +3901,8 @@ window.CW_PRO = {
   body.m-app.m-home.m-land:not(#m):not(#n) #mTabs { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
   body.m-land #mTabs button { flex: none; width: 100%; height: 54px; flex-direction: column; gap: 5px; }
   body.m-land #mTabs .mt-ic { width: 50px; height: 28px; }
-  body.m-app.m-land:not(#m):not(#n) #mTabs #mSet { position: static; align-self: center; margin: 0 0 auto; }
+  body.m-app.m-land:not(#m):not(#n) #mTabs #mSet { position: static; align-self: center; margin: 0 0 auto; width: 48px; height: 40px; flex: none; }
+  body.m-app.m-land:not(.look-ind):not(#m):not(#n) #mTabs #mSet { width: 38px; height: 38px; }
   body.m-app.m-land:not(#m):not(#n) #mTabs #mBrand { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: auto; padding-top: 8px; color: var(--m-ink); text-align: center; }
   #mBrand .brand-hex { width: 16px; height: 18px; margin: 0; }
   #mBrand span { font-family: var(--f-display, inherit); font-size: .92rem; line-height: .95; text-transform: uppercase; letter-spacing: .01em; }
