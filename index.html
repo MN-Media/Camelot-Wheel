@@ -3753,13 +3753,14 @@ window.CW_PRO = {
   /* Untere Leiste */
   body.m-app:not(#m):not(#n) #mTabs {
     display: flex; flex: none; width: 100%; gap: 2px; background: var(--m-bg); border-top: 2px solid var(--m-line);
-    padding: 8px max(env(safe-area-inset-right), 14px) max(env(safe-area-inset-bottom), 12px) max(env(safe-area-inset-left), 14px);
+    /* iOS-Tab-Leiste (23.10.2026): Fläche bis zum Rand, Inhalt knapp über dem Home-Balken */
+    padding: 6px max(env(safe-area-inset-right), 14px) max(calc(env(safe-area-inset-bottom) - 16px), 10px) max(env(safe-area-inset-left), 14px);
   }
   #mTabs button { position: relative; flex: 1; min-width: 0; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: var(--m-dim); font: 600 .6rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
   #mTabs svg { width: 30px; height: 20px; }
   #mTabs .mt-quick svg { width: 12px; height: 18px; }
   #mTabs .mt-set svg { width: 20px; height: 20px; }
-  #mTabs button { height: 54px; gap: 6px; }
+  #mTabs button { height: 50px; gap: 5px; }
   #mTabs .mt-ic { position: relative; display: grid; place-items: center; width: 54px; height: 30px; font-style: normal; color: var(--m-dim); transition: background-color .22s ease, color .22s ease; }
   #mTabs button.on { color: var(--m-ink); }
   #mTabs button.on .mt-ic { background: var(--m-act); color: var(--m-act-ink); }
@@ -3774,7 +3775,7 @@ window.CW_PRO = {
   @media (prefers-reduced-motion: reduce) { body.m-app .m-in { animation: none; } }
 
   /* Tipp-Karte (antippen und halten) über der unteren Leiste */
-  body.m-app #cwTip.tip-touch { bottom: calc(max(env(safe-area-inset-bottom), 12px) + 80px); }
+  body.m-app #cwTip.tip-touch { bottom: calc(max(calc(env(safe-area-inset-bottom) - 16px), 10px) + 72px); }
   body.m-land #cwTip.tip-touch { bottom: calc(env(safe-area-inset-bottom) + 64px); }
 
   /* Einstellungen als Blatt von unten */
