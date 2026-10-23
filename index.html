@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Camelot Wheel — DJ Harmonic Mixer</title>
 
   <!-- PWA Meta Tags -->
@@ -905,14 +905,12 @@ window.CW_PRO = {
   var mq = matchMedia('(pointer: coarse) and (max-width: 600px), (pointer: coarse) and (max-height: 500px)');
   /* iOS-Höhenfehler (23.10.2026): installierte App meldet die Höhe um die Statusleiste zu kurz */
   var standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  /* Home-Balken-Abstand (23.10.2026): ohne viewport-fit=cover meldet iOS keinen Sicherheitsabstand,
+     darum hier selbst: installierte App auf iPhones mit Home-Balken (Face ID → Bildschirmhöhe ab 812 pt) */
+  var homeBar = standalone && /iPhone/.test(navigator.userAgent) && Math.max(screen.width, screen.height) >= 812;
   function fixHeight() {
-    var b = document.body;
-    b.style.height = ''; b.style.bottom = ''; window.__mH = 0;
-    if (!standalone || !b.classList.contains('m-app')) return;
-    var portrait = innerHeight >= innerWidth;
-    var full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
-    var gap = full - innerHeight;
-    if (gap > 20 && gap < 140) { b.style.bottom = 'auto'; b.style.height = full + 'px'; window.__mH = full; }
+    window.__mH = 0;
+    document.body.classList.toggle('m-home', homeBar && document.body.classList.contains('m-app'));
   }
   function set() {
     var on = mq.matches;
@@ -928,7 +926,7 @@ window.CW_PRO = {
     box.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99999;background:#a7ff9c;color:#000;font:600 13px/1.5 system-ui;padding:10px 14px;white-space:pre';
     box.textContent = 'standalone ' + standalone + '\ninnerHeight ' + innerHeight + ' / innerWidth ' + innerWidth +
       '\nscreen ' + screen.width + ' x ' + screen.height + '\nsafe top ' + cs.paddingTop + ' / bottom ' + cs.paddingBottom +
-      '\nkorrigiert auf ' + (window.__mH || '–') + '\nbody ' + Math.round(document.body.getBoundingClientRect().height);
+      '\nHome-Balken-Abstand ' + (document.body.classList.contains('m-home') ? 'an' : 'aus') + '\nbody ' + Math.round(document.body.getBoundingClientRect().height);
     box.onclick = function () { box.remove(); };
     document.body.appendChild(box);
   });
@@ -3797,6 +3795,11 @@ window.CW_PRO = {
   @keyframes m-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } }
   body.m-app .m-in { animation: m-in .26s cubic-bezier(.25, .46, .45, .94) both; }
   @media (prefers-reduced-motion: reduce) { body.m-app .m-in { animation: none; } }
+
+  /* Abstand zum Home-Balken (nur installierte App auf Face-ID-iPhones, Klasse m-home) */
+  body.m-app.m-home:not(#m):not(#n) #mTabs { padding-bottom: 22px; }
+  body.m-app.m-home.m-land:not(#m):not(#n) #mTabs { padding-bottom: 12px; }
+  body.m-app.m-home #cwTip.tip-touch { bottom: 96px; }
 
   /* Tipp-Karte (antippen und halten) über der unteren Leiste */
   body.m-app #cwTip.tip-touch { bottom: calc(max(calc(env(safe-area-inset-bottom) - 16px), 10px) + 72px); }
