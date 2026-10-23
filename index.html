@@ -3852,6 +3852,57 @@ window.CW_PRO = {
   #mSheet .ms-sub { margin: 18px 0 8px; font: 700 .68rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--m-dim); }
   #mSheet .cat-dropdown { position: static !important; transform: none !important; display: grid !important; width: auto !important; max-width: none !important; margin: 0 !important; left: auto !important; top: auto !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; background: transparent !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
   #mSheet .wheel-legend { display: grid !important; margin: 0 0 6px; }
+  /* ═══ Classic-Look auf dem Handy (23.10.2026): Apple-Stil statt Industrial ═══ */
+  body.m-app:not(.look-ind):not(#m):not(#n) {
+    --m-bg: var(--bg); --m-card: #1c1c1e; --m-ink: var(--text); --m-dim: var(--muted); --m-line: rgba(255,255,255,.12);
+    --m-act: var(--accent); --m-act-ink: #fff; --m-gold: #ffcc00; --m-fill: rgba(118,118,128,.24); --m-seg: #636366;
+    --m-quick: #ffd60a; --m-tabbg: rgba(18,18,20,.82); --m-on: #30d158;
+  }
+  body.m-app.light-mode:not(.look-ind):not(#m):not(#n) {
+    --m-card: #f2f2f7; --m-line: rgba(0,0,0,.1); --m-fill: rgba(118,118,128,.12); --m-seg: #ffffff;
+    --m-quick: #c79300; --m-tabbg: rgba(249,249,249,.9); --m-on: #34c759;
+  }
+  /* Kopf: Name wie in iOS-Titeln, nicht gesperrt */
+  body.m-app:not(.look-ind):not(#m):not(#n) > header { padding: 10px 16px 6px; }
+  body.m-app:not(.look-ind):not(#m):not(#n) h1 { display: flex; align-items: center; gap: 8px; font-size: 1.32rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+  body.m-app:not(.look-ind):not(#m):not(#n) h1 .brand-hex { width: 18px; height: 20px; margin: 0; }
+  body.m-app:not(.look-ind):not(#m):not(#n) h1 .tier-tag { font-size: .72rem; letter-spacing: 0; margin-left: 2px; }
+  body.m-app:not(.look-ind) #mSet { width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--m-fill); color: var(--m-ink); }
+  body.m-app:not(.look-ind) #mSet svg { width: 18px; height: 18px; }
+  body.m-app:not(.look-ind) #mSet:active { background: var(--m-act); color: #fff; }
+  body.m-app.m-land:not(.look-ind) #mSet { background: var(--m-fill); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+
+  /* Umschalter Matches / Keys als iOS-Segment */
+  body.m-app:not(.look-ind):not(#m):not(#n) #mSeg { border: 0; border-radius: 9px; background: var(--m-fill); padding: 2px; gap: 0; }
+  body.m-app:not(.look-ind) #mSeg button { height: 32px; border-radius: 7px; color: var(--m-ink); font-family: inherit; font-weight: 600; font-size: .86rem; line-height: 1; text-transform: none; letter-spacing: -.01em; transition: background-color .25s ease, box-shadow .25s ease; }
+  body.m-app:not(.look-ind) #mSeg button[aria-selected="true"] { background: var(--m-seg); color: var(--m-ink); box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+
+  /* Untere Leiste: Milchglas, aktive Ansicht in Akzentfarbe (wie iOS-Tab-Leiste) */
+  body.m-app:not(.look-ind):not(#m):not(#n) #mTabs { background: var(--m-tabbg); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--m-line); }
+  body.m-app:not(.look-ind) #mTabs button { color: var(--m-dim); font-family: inherit; font-weight: 500; font-size: .66rem; line-height: 1; text-transform: none; letter-spacing: 0; }
+  body.m-app:not(.look-ind) #mTabs .mt-ic { background: transparent !important; color: inherit !important; }
+  body.m-app:not(.look-ind) #mTabs button.on { color: var(--m-act); }
+  body.m-app:not(.look-ind) #mTabs .mt-quick.on { color: var(--m-quick); }
+  body.m-app:not(.look-ind) #mTabs button:active .mt-ic { transform: scale(.92); }
+  body.m-app:not(.look-ind) #mTabs .m-pro { border-radius: 5px; padding: 1px 5px; font-weight: 700; }
+
+  /* Matches: Pro-Zeile als ruhige Karte */
+  body.m-app:not(.look-ind) .m-pro-line { border-radius: 10px; background: var(--m-fill); box-shadow: none; color: var(--m-dim); }
+
+  /* Einstellungs-Blatt wie ein iOS-Blatt: Griff, runde Ecken, Schalter, Pfeile */
+  body.m-app:not(.look-ind) #mSheet:not([hidden]) { background: rgba(0,0,0,.4); }
+  body.m-app:not(.look-ind) #mSheet .ms-card { border-top: 0; border-radius: 14px 14px 0 0; background: var(--m-card); padding-top: 8px; box-shadow: 0 -10px 40px rgba(0,0,0,.25); }
+  body.m-app:not(.look-ind) #mSheet .ms-card::before { content: ""; display: block; width: 36px; height: 5px; border-radius: 3px; background: rgba(127,127,127,.45); margin: 0 auto 10px; }
+  body.m-app:not(.look-ind) #mSheet .ms-head { font-family: inherit; font-size: 1.35rem; font-weight: 700; letter-spacing: -.02em; text-transform: none; margin-bottom: 6px; }
+  body.m-app:not(.look-ind) #mSheet .ms-close { width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--m-fill); color: var(--m-dim); font-size: .8rem; }
+  body.m-app:not(.look-ind) #mSheet .ms-row { font-family: inherit; font-weight: 500; font-size: .95rem; border-bottom: .5px solid var(--m-line); min-height: 48px; }
+  body.m-app:not(.look-ind) #mSheet .ms-row span:last-child { background: transparent; color: var(--m-dim); text-transform: none; letter-spacing: 0; font-size: .92rem; font-weight: 400; padding: 0; }
+  body.m-app:not(.look-ind) #mSheet .ms-row:not([role="switch"]) span:last-child::after { content: "›"; margin-left: 8px; font-size: 1.2rem; color: var(--m-dim); opacity: .6; }
+  body.m-app:not(.look-ind) #mSheet .ms-row[role="switch"] span:last-child { position: relative; width: 51px; height: 31px; border-radius: 16px; background: rgba(120,120,128,.32); font-size: 0; flex: none; transition: background-color .25s ease; }
+  body.m-app:not(.look-ind) #mSheet .ms-row[role="switch"] span:last-child::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 3px 1px rgba(0,0,0,.06); transition: transform .25s cubic-bezier(.25,.1,.25,1); }
+  body.m-app:not(.look-ind) #mSheet .ms-row[aria-checked="true"] span:last-child { background: var(--m-on); color: transparent; }
+  body.m-app:not(.look-ind) #mSheet .ms-row[aria-checked="true"] span:last-child::after { transform: translateX(20px); }
+  body.m-app:not(.look-ind) #mSheet .ms-sub { font-family: inherit; font-weight: 500; letter-spacing: .02em; font-size: .72rem; }
 </style>
 <script>
   // Handy-App-Rahmen: untere Leiste, Matches/Keys, Einstellungs-Blatt. Nutzt die vorhandenen Ansichten:
@@ -3877,9 +3928,9 @@ window.CW_PRO = {
     const tabs = document.createElement('nav');
     tabs.id = 'mTabs'; tabs.setAttribute('aria-label', 'Views');
     tabs.innerHTML =
-      `<button type="button" data-t="wheel"><i class="mt-ic">${icon('.mode-btn[data-mode="default"]')}</i><span>Wheel</span></button>` +
+      `<button type="button" data-t="wheel"><i class="mt-ic">${icon('.mode-btn[data-mode="default"]')}</i><span>Full</span></button>` +
       `<button type="button" data-t="grid"><i class="mt-ic">${icon('.mode-btn[data-mode="no-wheel"]')}</i><span>Grid</span></button>` +
-      `<button type="button" data-t="full"><i class="mt-ic">${icon('.mode-btn[data-mode="wheel-only"]')}</i><span>Full</span></button>` +
+      `<button type="button" data-t="full"><i class="mt-ic">${icon('.mode-btn[data-mode="wheel-only"]')}</i><span>Wheel</span></button>` +
       `<button type="button" data-t="dual"><i class="mt-ic">${icon('.mode-btn[data-mode="dual"]')}</i><span>Dual</span></button>` +
       `<button type="button" data-t="quick" class="mt-quick"><i class="mt-ic">${icon('#qm-btn')}</i><span>Quick</span></button>`;
     body.appendChild(tabs);
@@ -3992,6 +4043,16 @@ window.CW_PRO = {
     }
     // Freien Platz unter dem Bereich auf oben und Rad↔Umschalter verteilen (gleich in Matches und Keys)
     let keysH = 0;
+    // Höhe der Tasten (Blöcke 1–6 / 7–12) – auch wenn sie gerade verborgen sind (Matches)
+    function measureKeys() {
+      const qw = $('#quickWrap'), g = $('#quickGrid');
+      if (qw.offsetParent) return g.offsetHeight + 14;
+      const keep = qw.getAttribute('style');
+      qw.style.cssText = (keep || '') + ';display:block!important;position:absolute!important;visibility:hidden!important;left:0;top:0;width:' + Math.min(460, layout.clientWidth - 20) + 'px';
+      const h = g.offsetHeight + 14;
+      if (keep === null) qw.removeAttribute('style'); else qw.setAttribute('style', keep);
+      return h > 14 ? h : (keysH || 228);
+    }
     function spread() {
       let g = 0;
       if (body.classList.contains('m-app') && !body.classList.contains('m-land')) {
@@ -4000,8 +4061,7 @@ window.CW_PRO = {
           const wh = $('#wheel').getBoundingClientRect().height;
           const segH = seg.getBoundingClientRect().height + 16;
           // tatsächliche Höhe der Tasten (in Keys gemessen, gilt auch für Matches → kein Springen)
-          const qw = $('#quickWrap');
-          if (m === 'no-panel' && qw.offsetParent) keysH = $('#quickGrid').offsetHeight + 14;   // Tasten + Polster des Bereichs
+          keysH = measureKeys();
           const free = layout.clientHeight - 8 - wh - segH - (keysH || 228);
           g = Math.max(0, Math.min(44, Math.floor(free / 2)));   // je zur Hälfte: oben und Rad↔Umschalter, unten bleibt nur das Polster
         }
@@ -4011,7 +4071,7 @@ window.CW_PRO = {
     let spreadT = null;
     const spreadSoon = () => { clearTimeout(spreadT); spreadT = setTimeout(spread, 200); };
     addEventListener('resize', spreadSoon);
-    new MutationObserver(() => { sync(); spreadSoon(); }).observe(body, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(() => { sync(); spread(); spreadSoon(); }).observe(body, { attributes: true, attributeFilter: ['class'] });   // sofort, solange die Ansicht noch ausgeblendet ist
     spreadSoon();
 
     // Start im Handy-Rahmen: gemerkte Ansicht, „nur Rad“ gibt es dort nicht; danach Rad neu bemessen
