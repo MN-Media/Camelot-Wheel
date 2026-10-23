@@ -912,8 +912,15 @@ window.CW_PRO = {
     window.__mH = 0;
     document.body.classList.toggle('m-home', homeBar && document.body.classList.contains('m-app'));
   }
+  /* Kein Zoom in der Handy-App (23.10.2026) */
+  var vp = document.querySelector('meta[name=viewport]'), vpBase = vp ? vp.getAttribute('content') : '';
+  var noZoom = function (e) { if (document.body.classList.contains('m-app')) e.preventDefault(); };
+  document.addEventListener('gesturestart', noZoom, { passive: false });
+  document.addEventListener('gesturechange', noZoom, { passive: false });
+  document.addEventListener('touchmove', function (e) { if (e.touches.length > 1) noZoom(e); }, { passive: false });
   function set() {
     var on = mq.matches;
+    if (vp) vp.setAttribute('content', on ? vpBase + ', maximum-scale=1, user-scalable=no' : vpBase);
     document.body.classList.toggle('m-app', on);
     document.body.classList.toggle('m-land', on && innerWidth > innerHeight);
     fixHeight();
@@ -1331,6 +1338,12 @@ window.CW_PRO = {
   function mAppSize(mode) {
     const land = innerWidth > innerHeight;
     const hgt = sel => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().height : 0; };
+    if (land) {   // Querformat-Spalte: volle Höhe, Breite abzüglich Spalte (96) und Abständen
+      const H2 = innerHeight, W2 = innerWidth - 96 - 28;
+      if (mode === 'dual') return Math.floor(Math.max(180, Math.min((W2 - 20) / 2, H2 - 20)));
+      if (mode === 'wheel-only') return Math.floor(Math.max(200, Math.min(W2, H2 - 20)));
+      return Math.floor(Math.max(200, Math.min(H2 - 20, W2 * 0.52)));
+    }
     const hdr = land ? 0 : (hgt('header') || 52);
     const tab = hgt('#mTabs') || 64;
     const H = (window.__mH || innerHeight) - hdr - tab;
@@ -2266,7 +2279,7 @@ window.CW_PRO = {
   function focusFade(out) {
     [layoutDiv, quickWrap].forEach(el => {
       el.style.transition = 'opacity .22s ease, transform .22s ease';
-      el.style.transform  = out ? 'scale(.965)' : 'scale(1)';
+      el.style.transform  = document.body.classList.contains('m-app') ? '' : (out ? 'scale(.965)' : 'scale(1)');   // Handy: nur überblenden
       el.style.opacity    = out ? '0' : '1';
     });
   }
@@ -3730,7 +3743,7 @@ window.CW_PRO = {
   body.m-app #mSet { display: grid; place-items: center; flex: none; width: 42px; height: 38px; margin-left: auto; padding: 0; border: 2px solid var(--m-line); background: transparent; color: var(--m-ink); cursor: pointer; }
   body.m-app #mSet svg { width: 20px; height: 20px; }
   body.m-app #mSet:active { background: var(--m-act); border-color: var(--m-act); color: var(--m-act-ink); }
-  body.m-app.m-land #mSet { position: fixed; z-index: 60; top: 8px; right: 12px; margin: 0; background: var(--m-bg); }
+  body.m-app.m-land #mSet { margin: 0; }
   #mSeg button { flex: 1; height: 34px; border: 0; background: transparent; color: var(--m-ink); font: 600 .78rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
   #mSeg button[aria-selected="true"] { background: var(--m-act); color: var(--m-act-ink); }
 
@@ -3823,8 +3836,30 @@ window.CW_PRO = {
   #mTabs button.on .mt-ic { background: var(--m-act); color: var(--m-act-ink); }
   #mTabs .mt-quick.on .mt-ic { background: var(--m-gold); color: #1a1200; }
   #mTabs .m-pro { position: absolute; top: -7px; right: -10px; padding: 1px 4px; background: var(--m-gold); color: #1a1200; font: 700 .5rem/1.3 var(--f-text, system-ui, sans-serif); letter-spacing: .04em; }
-  body.m-land #mTabs button { height: 40px; flex-direction: row; gap: 10px; }
-  body.m-land #mTabs .mt-ic { width: 46px; height: 28px; }
+  /* Querformat-Spalte (23.10.2026): Leiste rechts als Spalte, Rad in voller Höhe */
+  #mBrand { display: none; }
+  body.m-app.m-land:not(#m):not(#n) { flex-direction: row; }
+  body.m-app.m-land:not(#m):not(#n) .layout { flex: 1 1 auto; min-width: 0; height: 100%; padding: 10px 14px; }
+  body.m-app.m-land:not(#m):not(#n) #mTabs {
+    order: 2; flex: none; width: 96px; height: 100%; flex-direction: column; align-items: stretch; justify-content: center; gap: 4px;
+    padding: 10px 8px 10px; border-top: 0; border-left: 2px solid var(--m-line);
+  }
+  body.m-app.m-home.m-land:not(#m):not(#n) #mTabs { padding-bottom: 14px; }
+  body.m-land #mTabs button { flex: none; width: 100%; height: 54px; flex-direction: column; gap: 5px; }
+  body.m-land #mTabs .mt-ic { width: 50px; height: 28px; }
+  body.m-app.m-land:not(#m):not(#n) #mTabs #mSet { position: static; align-self: center; margin: 0 0 auto; }
+  body.m-app.m-land:not(#m):not(#n) #mTabs #mBrand { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: auto; padding-top: 8px; color: var(--m-ink); text-align: center; }
+  #mBrand .brand-hex { width: 16px; height: 18px; margin: 0; }
+  #mBrand span { font-family: var(--f-display, inherit); font-size: .92rem; line-height: .95; text-transform: uppercase; letter-spacing: .01em; }
+  #mBrand .tier-tag { font-size: .58rem; margin: 0; }
+  body.m-app:not(.look-ind) #mBrand span { font-family: inherit; text-transform: none; font-weight: 700; font-size: .82rem; letter-spacing: -.01em; line-height: 1.1; }
+  body.m-app.m-land:not(.look-ind):not(#m):not(#n) #mTabs { border-left: .5px solid var(--m-line); }
+  /* Einstellungen quer: Seitenblatt von rechts, volle Höhe */
+  body.m-app.m-land #mSheet:not([hidden]) { align-items: stretch; justify-content: flex-end; }
+  body.m-app.m-land #mSheet .ms-card { width: min(420px, 58vw); max-width: none; max-height: none; height: 100%; border-top: 0; border-left: 4px solid var(--m-act); padding-bottom: 14px; animation: ms-side .26s cubic-bezier(.25, .46, .45, .94) both; }
+  @keyframes ms-side { from { transform: translateX(28px); opacity: 0; } }
+  body.m-app.m-land:not(.look-ind) #mSheet .ms-card { border-left: 0; border-radius: 14px 0 0 14px; }
+  body.m-app.m-land:not(.look-ind) #mSheet .ms-card::before { display: none; }
 
   /* Weicher Wechsel Matches ↔ Keys: nur der Bereich unter dem Rad blendet ein */
   @keyframes m-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } }
@@ -3838,7 +3873,7 @@ window.CW_PRO = {
 
   /* Tipp-Karte (antippen und halten) über der unteren Leiste */
   body.m-app #cwTip.tip-touch { bottom: calc(max(calc(env(safe-area-inset-bottom) - 16px), 10px) + 72px); }
-  body.m-land #cwTip.tip-touch { bottom: calc(env(safe-area-inset-bottom) + 64px); }
+  body.m-land #cwTip.tip-touch { bottom: 16px; left: calc(50% - 48px); }
 
   /* Einstellungen als Blatt von unten */
   body.m-app #mSheet:not([hidden]) { display: flex; position: fixed; inset: 0; z-index: 9000; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .55); }
@@ -3870,7 +3905,7 @@ window.CW_PRO = {
   body.m-app:not(.look-ind) #mSet { width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--m-fill); color: var(--m-ink); }
   body.m-app:not(.look-ind) #mSet svg { width: 18px; height: 18px; }
   body.m-app:not(.look-ind) #mSet:active { background: var(--m-act); color: #fff; }
-  body.m-app.m-land:not(.look-ind) #mSet { background: var(--m-fill); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+  body.m-app.m-land:not(.look-ind) #mSet { background: var(--m-fill); }
 
   /* Umschalter Matches / Keys als iOS-Segment */
   body.m-app:not(.look-ind):not(#m):not(#n) #mSeg { border: 0; border-radius: 9px; background: var(--m-fill); padding: 2px; gap: 0; }
@@ -3939,10 +3974,18 @@ window.CW_PRO = {
     const setBtn = document.createElement('button');
     setBtn.type = 'button'; setBtn.id = 'mSet'; setBtn.setAttribute('aria-label', 'Settings');
     setBtn.innerHTML = icon('#cat-btn');
+    // Name für die Querformat-Spalte (unten): Hexagon + „Camelot Wheel“ + Core/Pro
+    const brand = document.createElement('div');
+    brand.id = 'mBrand'; brand.setAttribute('aria-hidden', 'true');
+    const syncBrand = () => {
+      const hex = $('header .brand-hex'), tag = $('header .tier-tag');
+      brand.innerHTML = (hex ? hex.outerHTML : '') + '<span>Camelot<br>Wheel</span>' + (tag ? tag.outerHTML : '');
+    };
+    syncBrand();
     const placeSet = () => {
       const land = body.classList.contains('m-land');
-      const target = land ? body : $('header');
-      if (setBtn.parentNode !== target) target.appendChild(setBtn);
+      if (land) { if (setBtn.parentNode !== tabs) tabs.prepend(setBtn); if (brand.parentNode !== tabs) { syncBrand(); tabs.append(brand); } }
+      else if (setBtn.parentNode !== $('header')) $('header').appendChild(setBtn);
     };
     placeSet();
     addEventListener('resize', () => setTimeout(placeSet, 0));
@@ -4071,7 +4114,7 @@ window.CW_PRO = {
     let spreadT = null;
     const spreadSoon = () => { clearTimeout(spreadT); spreadT = setTimeout(spread, 200); };
     addEventListener('resize', spreadSoon);
-    new MutationObserver(() => { sync(); spread(); spreadSoon(); }).observe(body, { attributes: true, attributeFilter: ['class'] });   // sofort, solange die Ansicht noch ausgeblendet ist
+    new MutationObserver(() => { sync(); spread(); }).observe(body, { attributes: true, attributeFilter: ['class'] });   // sofort, solange die Ansicht noch ausgeblendet ist – kein zweiter, verzögerter Durchlauf
     spreadSoon();
 
     // Start im Handy-Rahmen: gemerkte Ansicht, „nur Rad“ gibt es dort nicht; danach Rad neu bemessen
