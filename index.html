@@ -921,6 +921,41 @@ window.CW_PRO = {
   /* Drehen zuverlässig (23.10.2026): Ausrichtung per Media-Query, beim Drehen mehrfach nachprüfen */
   var mqLand = matchMedia('(orientation: landscape)');
   var vpNow = null, started = false;
+  /* Island-Seite (23.10.2026): iOS meldet quer beidseitig 59 pt – Abstand nur dort, wo die Island wirklich ist */
+  var sideNow = null;
+  function sides() {
+    var b = document.body, st = document.documentElement.style, land = b.classList.contains('m-land');
+    var raw = { l: 0, r: 0, b: 0 }, side = '';
+    if (land) {
+      if (window.__cwFakeInsets) raw = window.__cwFakeInsets;
+      else {
+        var pr = document.getElementById('mInsets') || b.appendChild(Object.assign(document.createElement('div'), { id: 'mInsets' }));
+        pr.style.cssText = 'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+        var cs = getComputedStyle(pr);
+        raw = { l: parseFloat(cs.paddingLeft) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0 };
+      }
+      var o = typeof window.orientation === 'number' ? window.orientation
+            : (screen.orientation && screen.orientation.angle === 90 ? 90 : screen.orientation && screen.orientation.angle === 270 ? -90 : null);
+      if (raw.l > 20 || raw.r > 20) side = o === 90 ? 'l' : o === -90 ? 'r' : '';   // 90 = nach links gedreht → Island links
+    }
+    var v = {};
+    if (side) {
+      var isl = Math.max(8, (side === 'l' ? raw.l : raw.r) - 10);   // Leiste bis an die Island, Inhalt der Leiste daneben
+      v = side === 'l' ? { rl: isl, rr: 8, cl: 14, cr: 16, sr: 18 } : { rl: 8, rr: isl, cl: 16, cr: 14, sr: isl + 10 };
+    } else if (land) {
+      v = { rl: 8, rr: Math.max(8, raw.r), cl: Math.max(14, raw.l), cr: 14, sr: Math.max(18, raw.r) };
+    }
+    if (land) {
+      st.setProperty('--m-rl', v.rl + 'px'); st.setProperty('--m-rr', v.rr + 'px'); st.setProperty('--m-rw', (80 + v.rl + v.rr) + 'px');
+      st.setProperty('--m-cl', v.cl + 'px'); st.setProperty('--m-cr', v.cr + 'px'); st.setProperty('--m-sr', v.sr + 'px');
+      st.setProperty('--m-ib', raw.b + 'px');
+    } else ['--m-rl', '--m-rr', '--m-rw', '--m-cl', '--m-cr', '--m-sr', '--m-ib'].forEach(function (k) { st.removeProperty(k); });
+    b.classList.toggle('m-isl-l', side === 'l');
+    b.classList.toggle('m-isl-r', side === 'r');
+    var key = land + side + JSON.stringify(v), ch = sideNow !== null && key !== sideNow;
+    sideNow = key;
+    return ch;
+  }
   function set() {
     var b = document.body, on = mq.matches, land = on && mqLand.matches;
     var changed = b.classList.contains('m-app') !== on || b.classList.contains('m-land') !== land;
@@ -929,6 +964,7 @@ window.CW_PRO = {
     b.classList.toggle('m-app', on);
     b.classList.toggle('m-land', land);
     fixHeight();
+    if (sides()) changed = true;
     if (changed && started) setTimeout(function () { dispatchEvent(new Event('resize')); }, 60);   // Rad & Abstände neu bemessen
   }
   var recheck = function () { [120, 350, 800].forEach(function (ms) { setTimeout(set, ms); }); };
@@ -1350,13 +1386,12 @@ window.CW_PRO = {
     const land = document.body.classList.contains("m-land");
     const hgt = sel => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().height : 0; };
     if (land) {   // Querformat-Spalte: volle Höhe, Breite abzüglich Spalte (96) und Abständen
-      const ins = (() => { const pr = document.getElementById('mInsets') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'mInsets' }));
-        pr.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
-        const cs = getComputedStyle(pr); return { l: parseFloat(cs.paddingLeft) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0 }; })();
-      const H2 = innerHeight - Math.max(0, ins.b - 6), W2 = innerWidth - 96 - 28 - ins.l - ins.r;
-      if (mode === 'dual') return Math.floor(Math.max(180, Math.min((W2 - 20) / 2, H2 - 20)));
-      if (mode === 'wheel-only') return Math.floor(Math.max(200, Math.min(W2, H2 - 20)));
-      return Math.floor(Math.max(200, Math.min(H2 - 20, W2 * 0.52)));
+      const L = document.querySelector('.layout'), cs = getComputedStyle(L), px = k => parseFloat(cs[k]) || 0;
+      const W2 = (L.clientWidth || innerWidth - 120) - px('paddingLeft') - px('paddingRight');
+      const H2 = (L.clientHeight || innerHeight) - px('paddingTop') - px('paddingBottom');
+      if (mode === 'dual') return Math.floor(Math.max(180, Math.min((W2 - 18) / 2, H2)));
+      if (mode === 'wheel-only') return Math.floor(Math.max(200, Math.min(W2, H2)));
+      return Math.floor(Math.max(200, Math.min(H2, W2 * 0.5)));
     }
     const hdr = land ? 0 : (hgt('header') || 52);
     const tab = hgt('#mTabs') || 64;
@@ -1932,7 +1967,7 @@ window.CW_PRO = {
             <circle r="3.4" fill="var(--accent)"/>
           </g>
         </svg></div>
-        <span>${!document.body.classList.contains('m-app') ? 'Click on a key<br>in the Wheel or Quick Select' : document.body.classList.contains('mode-no-wheel') ? 'Tap a key<br>below' : 'Tap a key<br>on the wheel'}</span></div>${buildLegendHTML()}`;
+        <span>${!document.body.classList.contains('m-app') ? 'Click on a key<br>in the Wheel or Quick Select' : document.body.classList.contains('mode-no-wheel') ? 'Tap a key<br>in the grid' : 'Tap a key<br>on the wheel'}</span></div>${buildLegendHTML()}`;
     } else {
       const pOff=disabledCats.has('perfect'),mOff=disabledCats.has('mood');
       const b1Off=disabledCats.has('boostLv1'),b2Off=disabledCats.has('boostLv2'),b3Off=disabledCats.has('boostLv3');
@@ -3853,10 +3888,10 @@ window.CW_PRO = {
   /* Querformat-Spalte (23.10.2026): Leiste rechts als Spalte, Rad in voller Höhe */
   #mBrand { display: none; }
   body.m-app.m-land:not(#m):not(#n) { flex-direction: row; }
-  body.m-app.m-land:not(#m):not(#n) .layout { flex: 1 1 auto; min-width: 0; height: 100%; padding: 10px 14px max(10px, calc(env(safe-area-inset-bottom) - 6px)) max(14px, env(safe-area-inset-left)); }
+  body.m-app.m-land:not(#m):not(#n) .layout { flex: 1 1 auto; min-width: 0; height: 100%; padding: 10px var(--m-cr, 14px) max(10px, calc(var(--m-ib, 0px) - 6px)) var(--m-cl, 14px); column-gap: 16px; }
   body.m-app.m-land:not(#m):not(#n) #mTabs {
     order: 2; flex: none; width: 96px; height: 100%; flex-direction: column; align-items: stretch; justify-content: center; gap: 4px;
-    padding: 10px max(8px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) 8px; width: calc(96px + env(safe-area-inset-right)); border-top: 0; border-left: 2px solid var(--m-line);
+    padding: 10px var(--m-rr, 8px) max(10px, var(--m-ib, 0px)) var(--m-rl, 8px); width: var(--m-rw, 96px); border-top: 0; border-left: 2px solid var(--m-line);
   }
   body.m-app.m-home.m-land:not(#m):not(#n) #mTabs { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
   body.m-land #mTabs button { flex: none; width: 100%; height: 54px; flex-direction: column; gap: 5px; }
@@ -3868,6 +3903,20 @@ window.CW_PRO = {
   #mBrand .tier-tag { font-size: .58rem; margin: 0; }
   body.m-app:not(.look-ind) #mBrand span { font-family: inherit; text-transform: none; font-weight: 700; font-size: .82rem; letter-spacing: -.01em; line-height: 1.1; }
   body.m-app.m-land:not(.look-ind):not(#m):not(#n) #mTabs { border-left: .5px solid var(--m-line); }
+  /* Island links (nach links gedreht): Leiste wandert nach links, Inhalt geht rechts bis an den Rand */
+  body.m-app.m-land.m-isl-l:not(#m):not(#n) #mTabs { order: -1; border-left: 0; border-right: 2px solid var(--m-line); }
+  body.m-app.m-land.m-isl-l:not(.look-ind):not(#m):not(#n) #mTabs { border-right-width: .5px; }
+  body.m-app.m-land.m-isl-l #cwTip.tip-touch { left: calc(50% + 48px); }
+  body.m-app.m-land #mSheet .ms-card { padding-right: var(--m-sr, 18px); }
+  /* Grid & Keys quer: Tasten füllen die Höhe */
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .panel { min-width: 0; }
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .cat { grid-template-columns: 138px minmax(0, 1fr); }
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .quick-wrap, body.m-app.m-land.mode-no-panel:not(#m):not(#n) .quick-wrap { height: 100%; max-width: none; display: flex; flex-direction: column; justify-content: center; padding: 0; }
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .quick-grid { row-gap: 18px; column-gap: 8px; }
+  body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .qbtn { height: min(70px, calc((100dvh - 128px) / 4)); min-height: 0; font-size: 1.05rem; }
+  body.m-app.m-land.mode-no-panel:not(#m):not(#n) .quick-grid { row-gap: 14px; column-gap: 8px; }
+  body.m-app.m-land.mode-no-panel:not(#m):not(#n) .qbtn { height: min(62px, calc((100dvh - 178px) / 4)); min-height: 0; }
   /* Einstellungen quer: Seitenblatt von rechts, volle Höhe */
   body.m-app.m-land #mSheet:not([hidden]) { align-items: stretch; justify-content: flex-end; }
   body.m-app.m-land #mSheet .ms-card { width: min(420px, 58vw); max-width: none; max-height: none; height: 100%; border-top: 0; border-left: 4px solid var(--m-act); padding-bottom: 14px; animation: ms-side .26s cubic-bezier(.25, .46, .45, .94) both; }
