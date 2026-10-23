@@ -903,11 +903,35 @@ window.CW_PRO = {
 /* Handy-App-Rahmen (22.10.2026): auf Touch-Telefonen ein fester Bildschirm statt einer Webseite */
 (function () {
   var mq = matchMedia('(pointer: coarse) and (max-width: 600px), (pointer: coarse) and (max-height: 500px)');
+  /* iOS-Höhenfehler (23.10.2026): installierte App meldet die Höhe um die Statusleiste zu kurz */
+  var standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  function fixHeight() {
+    var b = document.body;
+    b.style.height = ''; b.style.bottom = ''; window.__mH = 0;
+    if (!standalone || !b.classList.contains('m-app')) return;
+    var portrait = innerHeight >= innerWidth;
+    var full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
+    var gap = full - innerHeight;
+    if (gap > 20 && gap < 140) { b.style.bottom = 'auto'; b.style.height = full + 'px'; window.__mH = full; }
+  }
   function set() {
     var on = mq.matches;
     document.body.classList.toggle('m-app', on);
     document.body.classList.toggle('m-land', on && innerWidth > innerHeight);
+    fixHeight();
   }
+  if (/[?&]vp\b/.test(location.search)) addEventListener('load', function () {
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;left:0;top:0;width:0;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)';
+    document.body.appendChild(probe);
+    var cs = getComputedStyle(probe), box = document.createElement('div');
+    box.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99999;background:#a7ff9c;color:#000;font:600 13px/1.5 system-ui;padding:10px 14px;white-space:pre';
+    box.textContent = 'standalone ' + standalone + '\ninnerHeight ' + innerHeight + ' / innerWidth ' + innerWidth +
+      '\nscreen ' + screen.width + ' x ' + screen.height + '\nsafe top ' + cs.paddingTop + ' / bottom ' + cs.paddingBottom +
+      '\nkorrigiert auf ' + (window.__mH || '–') + '\nbody ' + Math.round(document.body.getBoundingClientRect().height);
+    box.onclick = function () { box.remove(); };
+    document.body.appendChild(box);
+  });
   set();
   addEventListener('resize', set);
 })();
@@ -1311,7 +1335,7 @@ window.CW_PRO = {
     const hgt = sel => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().height : 0; };
     const hdr = land ? 0 : (hgt('header') || 52);
     const tab = hgt('#mTabs') || 64;
-    const H = innerHeight - hdr - tab;
+    const H = (window.__mH || innerHeight) - hdr - tab;
     const Wd = innerWidth - 20;
     if (mode === 'dual') return Math.floor(land ? Math.min((innerWidth - 40) / 2, H - 14) : Math.min(Wd, (H - 18) / 2));
     if (land) return Math.floor(Math.max(200, Math.min(H - 14, innerWidth * 0.5)));
