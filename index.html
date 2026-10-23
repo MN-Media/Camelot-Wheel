@@ -1339,7 +1339,7 @@ window.CW_PRO = {
     if (land) return Math.floor(Math.max(200, Math.min(H - 14, innerWidth * 0.5)));
     if (mode === 'no-wheel') return Math.min(BASE, Wd);
     const need = 246;   // gleicher Platz für Matches und Keys → Rad bleibt beim Umschalten gleich groß
-    return Math.floor(Math.max(220, Math.min(Wd, BASE, H - 48 - need)));
+    return Math.floor(Math.max(220, Math.min(Wd, BASE, H - 64 - need)));
   }
 
   function calcSizeForMode(mode) {
@@ -1904,7 +1904,7 @@ window.CW_PRO = {
             <circle r="3.4" fill="var(--accent)"/>
           </g>
         </svg></div>
-        <span>${document.body.classList.contains('m-app') ? 'Tap a key<br>on the wheel' : 'Click on a key<br>in the Wheel or Quick Select'}</span></div>${buildLegendHTML()}`;
+        <span>${!document.body.classList.contains('m-app') ? 'Click on a key<br>in the Wheel or Quick Select' : document.body.classList.contains('mode-no-wheel') ? 'Tap a key<br>below' : 'Tap a key<br>on the wheel'}</span></div>${buildLegendHTML()}`;
     } else {
       const pOff=disabledCats.has('perfect'),mOff=disabledCats.has('mood');
       const b1Off=disabledCats.has('boostLv1'),b2Off=disabledCats.has('boostLv2'),b3Off=disabledCats.has('boostLv3');
@@ -3711,6 +3711,9 @@ window.CW_PRO = {
     display: flex; flex-direction: column; align-items: center; flex-wrap: nowrap; overflow: hidden;
   }
   body.m-app:not(#m):not(#n) .wheel-col { flex: none; gap: 8px; }
+  /* Layout entzerren (23.10.2026): freier Platz oben und zwischen Rad und Umschalter statt unter den Tasten */
+  body.m-app:not(.m-land):not(#m):not(#n) .layout { padding-top: calc(8px + var(--m-gap, 0px)); }
+  body.m-app:not(.m-land):not(#m):not(#n) #wheel { margin-bottom: var(--m-gap, 0px); }   /* .wheel-col ist display: contents */
   body.m-app:not(#m):not(#n) .wheel-legend { display: none; }
 
   /* Umschalter Matches / Keys */
@@ -3744,7 +3747,27 @@ window.CW_PRO = {
   body.m-app.mode-no-panel:not(#m):not(#n) .quick-wrap, body.m-app.mode-no-wheel:not(#m):not(#n) .quick-wrap {
     display: block; flex: 1 1 auto; min-height: 0; width: 100%; max-width: 460px; min-width: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 4px 0 10px;
   }
-  body.m-app.mode-no-wheel:not(#m):not(#n) .quick-wrap { flex: none; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .quick-wrap { flex: none; padding: 10px 0 14px; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .layout { padding-top: 12px; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .panel { padding: 14px 16px; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .panel > .empty-state { flex: 1 1 auto; justify-content: center; gap: 18px; font-size: 1.15rem; line-height: 1.35; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .empty-icon { transform: none; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .empty-icon svg { width: 120px; height: 120px; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .cats-grid { row-gap: 6px; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .cat { grid-template-columns: 158px minmax(0, 1fr); }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .cat-head { font-size: .72rem; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .chip { min-width: 58px; height: 42px; font-size: .95rem; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .quick-grid { row-gap: 22px; column-gap: 8px; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .qkey { gap: 7px; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .pos-num { font-size: .72rem; }
+  body.m-app.mode-no-wheel:not(#m):not(#n) .qbtn { height: 56px; min-height: 56px; font-size: 1rem; }
+  @media (max-height: 700px) {
+    body.m-app.mode-no-wheel:not(#m):not(#n) .qbtn { height: 46px; min-height: 46px; }
+    body.m-app.mode-no-wheel:not(#m):not(#n) .quick-grid { row-gap: 16px; }
+    body.m-app.mode-no-wheel:not(#m):not(#n) .empty-icon svg { width: 96px; height: 96px; }
+    body.m-app.mode-no-wheel:not(#m):not(#n) .chip { height: 36px; }
+    body.m-app.mode-no-wheel:not(#m):not(#n) .cats-grid { row-gap: 2px; }
+  }
   body.m-app:not(#m):not(#n) .quick-label { display: none; }
   body.m-app:not(#m):not(#n) .quick-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; column-gap: 6px; row-gap: 16px; width: 100%; }
   body.m-app:not(#m):not(#n) .qkey { display: grid; gap: 5px; }
@@ -3843,8 +3866,8 @@ window.CW_PRO = {
     tabs.id = 'mTabs'; tabs.setAttribute('aria-label', 'Views');
     tabs.innerHTML =
       `<button type="button" data-t="wheel"><i class="mt-ic">${icon('.mode-btn[data-mode="default"]')}</i><span>Wheel</span></button>` +
-      `<button type="button" data-t="dual"><i class="mt-ic">${icon('.mode-btn[data-mode="dual"]')}</i><span>Dual</span></button>` +
       `<button type="button" data-t="grid"><i class="mt-ic">${icon('.mode-btn[data-mode="no-wheel"]')}</i><span>Grid</span></button>` +
+      `<button type="button" data-t="dual"><i class="mt-ic">${icon('.mode-btn[data-mode="dual"]')}</i><span>Dual</span></button>` +
       `<button type="button" data-t="quick" class="mt-quick"><i class="mt-ic">${icon('#qm-btn')}</i><span>Quick</span></button>` +
       `<button type="button" data-t="set" class="mt-set"><i class="mt-ic">${icon('#cat-btn')}</i><span>Settings</span></button>`;
     body.appendChild(tabs);
@@ -3942,7 +3965,29 @@ window.CW_PRO = {
         if (isPro() && tag) tag.remove();
       });
     }
-    new MutationObserver(sync).observe(body, { attributes: true, attributeFilter: ['class'] });
+    // Freien Platz unter dem Bereich auf oben und Rad↔Umschalter verteilen (gleich in Matches und Keys)
+    let keysH = 0;
+    function spread() {
+      let g = 0;
+      if (body.classList.contains('m-app') && !body.classList.contains('m-land')) {
+        const m = curMode();
+        if (m === 'default' || m === 'no-panel') {
+          const wh = $('#wheel').getBoundingClientRect().height;
+          const segH = seg.getBoundingClientRect().height + 16;
+          // tatsächliche Höhe der Tasten (in Keys gemessen, gilt auch für Matches → kein Springen)
+          const qw = $('#quickWrap');
+          if (m === 'no-panel' && qw.offsetParent) keysH = $('#quickGrid').offsetHeight + 14;   // Tasten + Polster des Bereichs
+          const free = layout.clientHeight - 8 - wh - segH - (keysH || 228);
+          g = Math.max(0, Math.min(44, Math.floor(free / 2)));   // je zur Hälfte: oben und Rad↔Umschalter, unten bleibt nur das Polster
+        }
+      }
+      layout.style.setProperty('--m-gap', g + 'px');
+    }
+    let spreadT = null;
+    const spreadSoon = () => { clearTimeout(spreadT); spreadT = setTimeout(spread, 200); };
+    addEventListener('resize', spreadSoon);
+    new MutationObserver(() => { sync(); spreadSoon(); }).observe(body, { attributes: true, attributeFilter: ['class'] });
+    spreadSoon();
 
     // Start im Handy-Rahmen: gemerkte Ansicht, „nur Rad“ gibt es dort nicht; danach Rad neu bemessen
     let wasApp = null;
