@@ -918,13 +918,24 @@ window.CW_PRO = {
   document.addEventListener('gesturestart', noZoom, { passive: false });
   document.addEventListener('gesturechange', noZoom, { passive: false });
   document.addEventListener('touchmove', function (e) { if (e.touches.length > 1) noZoom(e); }, { passive: false });
+  /* Drehen zuverlässig (23.10.2026): Ausrichtung per Media-Query, beim Drehen mehrfach nachprüfen */
+  var mqLand = matchMedia('(orientation: landscape)');
+  var vpNow = null, started = false;
   function set() {
-    var on = mq.matches;
-    if (vp) vp.setAttribute('content', on ? vpBase + ', maximum-scale=1, user-scalable=no' : vpBase);
-    document.body.classList.toggle('m-app', on);
-    document.body.classList.toggle('m-land', on && innerWidth > innerHeight);
+    var b = document.body, on = mq.matches, land = on && mqLand.matches;
+    var changed = b.classList.contains('m-app') !== on || b.classList.contains('m-land') !== land;
+    var c = vpBase + (on ? ', maximum-scale=1, user-scalable=no' : '') + (land ? ', viewport-fit=cover' : '');
+    if (vp && c !== vpNow) { vp.setAttribute('content', c); vpNow = c; }
+    b.classList.toggle('m-app', on);
+    b.classList.toggle('m-land', land);
     fixHeight();
+    if (changed && started) setTimeout(function () { dispatchEvent(new Event('resize')); }, 60);   // Rad & Abstände neu bemessen
   }
+  var recheck = function () { [120, 350, 800].forEach(function (ms) { setTimeout(set, ms); }); };
+  if (mqLand.addEventListener) mqLand.addEventListener('change', function () { set(); recheck(); });
+  addEventListener('orientationchange', recheck);
+  addEventListener('pageshow', recheck);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) recheck(); });
   if (/[?&]vp\b/.test(location.search)) addEventListener('load', function () {
     var probe = document.createElement('div');
     probe.style.cssText = 'position:fixed;left:0;top:0;width:0;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)';
@@ -937,8 +948,8 @@ window.CW_PRO = {
     box.onclick = function () { box.remove(); };
     document.body.appendChild(box);
   });
-  set();
-  addEventListener('resize', set);
+  set(); started = true;
+  addEventListener('resize', function () { set(); recheck(); });
 })();
 </script>
 <header>
@@ -1336,10 +1347,13 @@ window.CW_PRO = {
 
   // Handy-App: Rad füllt die Breite, außer die Höhe reicht nicht (dann bekommt der Bereich darunter Vorrang)
   function mAppSize(mode) {
-    const land = innerWidth > innerHeight;
+    const land = document.body.classList.contains("m-land");
     const hgt = sel => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().height : 0; };
     if (land) {   // Querformat-Spalte: volle Höhe, Breite abzüglich Spalte (96) und Abständen
-      const H2 = innerHeight, W2 = innerWidth - 96 - 28;
+      const ins = (() => { const pr = document.getElementById('mInsets') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'mInsets' }));
+        pr.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+        const cs = getComputedStyle(pr); return { l: parseFloat(cs.paddingLeft) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0 }; })();
+      const H2 = innerHeight - Math.max(0, ins.b - 6), W2 = innerWidth - 96 - 28 - ins.l - ins.r;
       if (mode === 'dual') return Math.floor(Math.max(180, Math.min((W2 - 20) / 2, H2 - 20)));
       if (mode === 'wheel-only') return Math.floor(Math.max(200, Math.min(W2, H2 - 20)));
       return Math.floor(Math.max(200, Math.min(H2 - 20, W2 * 0.52)));
@@ -3839,12 +3853,12 @@ window.CW_PRO = {
   /* Querformat-Spalte (23.10.2026): Leiste rechts als Spalte, Rad in voller Höhe */
   #mBrand { display: none; }
   body.m-app.m-land:not(#m):not(#n) { flex-direction: row; }
-  body.m-app.m-land:not(#m):not(#n) .layout { flex: 1 1 auto; min-width: 0; height: 100%; padding: 10px 14px; }
+  body.m-app.m-land:not(#m):not(#n) .layout { flex: 1 1 auto; min-width: 0; height: 100%; padding: 10px 14px max(10px, calc(env(safe-area-inset-bottom) - 6px)) max(14px, env(safe-area-inset-left)); }
   body.m-app.m-land:not(#m):not(#n) #mTabs {
     order: 2; flex: none; width: 96px; height: 100%; flex-direction: column; align-items: stretch; justify-content: center; gap: 4px;
-    padding: 10px 8px 10px; border-top: 0; border-left: 2px solid var(--m-line);
+    padding: 10px max(8px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) 8px; width: calc(96px + env(safe-area-inset-right)); border-top: 0; border-left: 2px solid var(--m-line);
   }
-  body.m-app.m-home.m-land:not(#m):not(#n) #mTabs { padding-bottom: 14px; }
+  body.m-app.m-home.m-land:not(#m):not(#n) #mTabs { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
   body.m-land #mTabs button { flex: none; width: 100%; height: 54px; flex-direction: column; gap: 5px; }
   body.m-land #mTabs .mt-ic { width: 50px; height: 28px; }
   body.m-app.m-land:not(#m):not(#n) #mTabs #mSet { position: static; align-self: center; margin: 0 0 auto; }
