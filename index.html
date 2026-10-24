@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '20';
+const CW_BUILD = '21';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -967,15 +967,39 @@ window.CW_PRO = {
   function set() {
     var b = document.body, on = mq.matches, land = on && mqLand.matches;
     var changed = b.classList.contains('m-app') !== on || b.classList.contains('m-land') !== land;
-    var c = vpBase + (on ? ', maximum-scale=1, user-scalable=no' : '') + (land ? ', viewport-fit=cover' : '');
+    var c = vpBase + (on ? ', minimum-scale=1, maximum-scale=1, user-scalable=no' : '') + (land ? ', viewport-fit=cover' : '');
     if (vp && c !== vpNow) { vp.setAttribute('content', c); vpNow = c; }
     b.classList.toggle('m-app', on);
     b.classList.toggle('m-land', land);
+    document.documentElement.classList.toggle('m-root', on);
     fixHeight();
+    heal('check');
     if (sides()) changed = true;
     if (changed && started) setTimeout(function () { dispatchEvent(new Event('resize')); }, 60);   // Rad & Abstände neu bemessen
   }
-  var recheck = function () { [120, 350, 800].forEach(function (ms) { setTimeout(set, ms); }); };
+  /* Selbstreparatur (24.10.2026): iOS lässt nach dem Drehen die Seite manchmal verschoben/gezoomt zurück –
+     Anzeige und Berührung passen dann nicht mehr zusammen. Prüfen und sofort zurücksetzen. */
+  function heal(why) {
+    if (!document.body.classList.contains('m-app')) return;
+    var ae = document.activeElement; if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;   // Tastatur offen: nicht eingreifen
+    var vv = window.visualViewport, sc = vv ? vv.scale : 1, ot = vv ? vv.offsetTop : 0, ol = vv ? vv.offsetLeft : 0;
+    var bad = scrollX || scrollY || document.documentElement.scrollTop || document.body.scrollTop || Math.abs(sc - 1) > 0.01 || Math.abs(ot) > 1 || Math.abs(ol) > 1;
+    if (!bad) return;
+    try {
+      var s = JSON.parse(localStorage.getItem('cw.heal') || '{"n":0}');
+      s.n++; s.last = why + ' sx' + Math.round(scrollX) + ' sy' + Math.round(scrollY) + ' z' + sc.toFixed(2) + ' o' + Math.round(ol) + '/' + Math.round(ot) + ' ' + innerWidth + 'x' + innerHeight;
+      localStorage.setItem('cw.heal', JSON.stringify(s));
+    } catch (e) {}
+    scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0;
+    if (vp && vpNow && Math.abs(sc - 1) > 0.01) {   // Zoom zurücksetzen: Viewport kurz neu setzen
+      vp.setAttribute('content', vpNow.replace('initial-scale=1.0', 'initial-scale=1'));
+      setTimeout(function () { vp.setAttribute('content', vpNow); }, 60);
+    }
+  }
+  document.addEventListener('touchstart', function () { heal('touch'); }, { passive: true, capture: true });
+  if (window.visualViewport) { visualViewport.addEventListener('resize', function () { heal('vv'); }); visualViewport.addEventListener('scroll', function () { heal('vvs'); }); }
+  addEventListener('scroll', function () { heal('scroll'); }, { passive: true });
+  var recheck = function () { [120, 350, 800, 1500].forEach(function (ms) { setTimeout(set, ms); }); };
   if (mqLand.addEventListener) mqLand.addEventListener('change', function () { set(); recheck(); });
   addEventListener('orientationchange', recheck);
   addEventListener('pageshow', recheck);
@@ -3790,6 +3814,7 @@ window.CW_PRO = {
 <style>
   /* ═══ Handy-App-Rahmen (m-app) ═══════════════════════════════════════════ */
   #mTabs, #mSeg, #mSheet { display: none; }
+  html.m-root { height: 100%; overflow: hidden; overscroll-behavior: none; }
   body.m-app:not(#m):not(#n) {
     --m-bg: #000; --m-card: #111; --m-ink: #fff; --m-dim: #8a8a8a; --m-line: #262626; --m-act: #a7ff9c; --m-act-ink: #000; --m-gold: #ffcc33;
     position: fixed; inset: 0; height: auto; min-height: 0; overflow: hidden; overscroll-behavior: none;
@@ -3985,6 +4010,22 @@ window.CW_PRO = {
   #mSheet .ms-row span:last-child { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; padding: 5px 9px; background: var(--m-line); color: var(--m-ink); }
   #mSheet .ms-row[aria-checked="true"] span:last-child { background: var(--m-act); color: var(--m-act-ink); }
   #mSheet .ms-test span:first-child { color: var(--m-gold); }
+  /* Quick Check hochkant kompakt (24.10.2026): alles sichtbar ohne Scrollen */
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-card { position: relative; flex: 1 1 auto; justify-content: flex-start; gap: 12px; padding: 12px 0 0; width: 100%; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-title { flex-direction: row; align-items: baseline; gap: 8px; font-size: 1.15rem; line-height: 1; min-height: 30px; align-self: flex-start; padding-left: 2px; }
+  body.m-app:not(.m-land):not(.look-ind):not(#m):not(#n) .qm-title { font-size: .72rem; align-items: center; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-title .qm-sub { margin: 0; font-size: .56rem; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-reset { position: absolute; top: 10px; right: 0; padding: 6px 12px; font-size: .6rem; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-keys { gap: 10px; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-key { min-width: 76px; padding: 8px 8px; font-size: 1.7rem; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-swap { width: 32px; height: 32px; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-hint { font-size: .82rem; line-height: 1.4; max-width: 300px; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-verdict { width: 100%; max-width: 460px; padding: 10px 14px 10px 16px; gap: 6px; animation: none; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-verdict-name { font-size: 1.45rem; line-height: 1; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-verdict-body { font-size: .8rem; line-height: 1.4; }
+  body.m-app:not(.m-land):not(#m):not(#n) .qm-note { display: none; }
+  body.m-app.quick-mode:not(.m-land):not(#m):not(#n) .panel { overflow: hidden; padding-top: 0; }
+  @media (max-width: 400px) { body.m-app:not(.m-land):not(#m):not(#n) .qm-title .qm-sub { display: none; } }
   #mSheet .ms-build { margin-top: 16px; font: 500 .68rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .06em; color: var(--m-dim); opacity: .7; text-align: center; }
   #mSheet .ms-sub { margin: 18px 0 8px; font: 700 .68rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--m-dim); }
   #mSheet .cat-dropdown { position: static !important; transform: none !important; display: grid !important; width: auto !important; max-width: none !important; margin: 0 !important; left: auto !important; top: auto !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; background: transparent !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
@@ -4105,6 +4146,13 @@ window.CW_PRO = {
       <div class="ms-sub" data-sub></div>
       <div class="ms-cats"></div>
       <div class="ms-build">Build ${CW_BUILD}${window.CW_PRO.test ? ' · test version' : ''}</div></div>`;
+    if (window.CW_PRO.test) {   // Testversion: Selbstreparatur-Zähler (antippen = Details / zurücksetzen)
+      const bl = sheet.querySelector('.ms-build');
+      const hs = () => { try { return JSON.parse(localStorage.getItem('cw.heal') || '{"n":0}'); } catch (e) { return { n: 0 }; } };
+      const show = det => { const s = hs(); bl.textContent = 'Build ' + CW_BUILD + ' · test version · fixes ' + s.n + (det && s.last ? ' · ' + s.last : ''); };
+      bl.addEventListener('click', () => { if (bl.dataset.det) { try { localStorage.removeItem('cw.heal'); } catch (e) {} delete bl.dataset.det; show(false); } else { bl.dataset.det = '1'; show(true); } });
+      setBtn.addEventListener('click', () => { delete bl.dataset.det; show(false); });
+    }
     body.appendChild(sheet);
     const cats = sheet.querySelector('.ms-cats'), sub = sheet.querySelector('[data-sub]');
     const parked = [];   // verschobene Elemente samt Herkunft
