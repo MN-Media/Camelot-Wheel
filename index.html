@@ -873,7 +873,16 @@ var CW_IDLE_DEFAULT='code';
    ════════════════════════════════════════════════════════════════════ */
 // Website-Adresse: in der Testphase (Wheel läuft unter *.netlify.app) die Test-Website
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
+/* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
+const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
+const CW_BUILD = '20';
+try {
+  const q = new URLSearchParams(location.search).get('pro');
+  if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
+  if (CW_TEST && q === '0') localStorage.removeItem('cw.pro.ticket');
+} catch (e) {}
 window.CW_PRO = {
+  test:        CW_TEST,
   status:      'soon',                                         // 'soon' | 'live'
   price:       '€3.99',
   checkoutUrl: '',                                             // Lemon-Squeezy-Kauflink (Schritt G)
@@ -889,8 +898,7 @@ window.CW_PRO = {
   // Bis dahin gibt es nur einen Test-Schalter auf dem eigenen Rechner.
   verify(ticket) {
     if (!ticket) return false;
-    const local = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    return local && ticket === 'dev';
+    return CW_TEST && ticket === 'dev';   // Testschalter nur auf Testversion/lokal, Live ignoriert ihn
   },
   // Schritt D: Schlüssel an /api/license schicken, Ticket speichern.
   async activate(key) {
@@ -3771,7 +3779,10 @@ window.CW_PRO = {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('[CW] SW registered:', reg.scope))
+        .then(reg => {
+          console.log('[CW] SW registered:', reg.scope);
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+        })
         .catch(err => console.warn('[CW] SW error:', err));
     });
   }
@@ -3973,6 +3984,8 @@ window.CW_PRO = {
   #mSheet .ms-row { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 50px; padding: 0; border: 0; border-bottom: 1px solid var(--m-line); background: transparent; color: var(--m-ink); font: 600 .9rem/1.2 var(--f-text, system-ui, sans-serif); text-align: left; cursor: pointer; }
   #mSheet .ms-row span:last-child { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; padding: 5px 9px; background: var(--m-line); color: var(--m-ink); }
   #mSheet .ms-row[aria-checked="true"] span:last-child { background: var(--m-act); color: var(--m-act-ink); }
+  #mSheet .ms-test span:first-child { color: var(--m-gold); }
+  #mSheet .ms-build { margin-top: 16px; font: 500 .68rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .06em; color: var(--m-dim); opacity: .7; text-align: center; }
   #mSheet .ms-sub { margin: 18px 0 8px; font: 700 .68rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--m-dim); }
   #mSheet .cat-dropdown { position: static !important; transform: none !important; display: grid !important; width: auto !important; max-width: none !important; margin: 0 !important; left: auto !important; top: auto !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; background: transparent !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
   #mSheet .wheel-legend { display: grid !important; margin: 0 0 6px; }
@@ -4088,8 +4101,10 @@ window.CW_PRO = {
       <button type="button" class="ms-row" role="switch" data-s="light"><span>Light mode</span><span></span></button>
       <button type="button" class="ms-row" data-s="look"><span>Design</span><span></span></button>
       <button type="button" class="ms-row" data-s="info"><span>About, install and shortcuts</span><span>Open</span></button>
+      ${window.CW_PRO.test ? '<button type="button" class="ms-row ms-test" role="switch" data-s="protest"><span>Pro (test version only)</span><span></span></button>' : ''}
       <div class="ms-sub" data-sub></div>
-      <div class="ms-cats"></div></div>`;
+      <div class="ms-cats"></div>
+      <div class="ms-build">Build ${CW_BUILD}${window.CW_PRO.test ? ' · test version' : ''}</div></div>`;
     body.appendChild(sheet);
     const cats = sheet.querySelector('.ms-cats'), sub = sheet.querySelector('[data-sub]');
     const parked = [];   // verschobene Elemente samt Herkunft
@@ -4100,6 +4115,7 @@ window.CW_PRO = {
       set('kn', !!(kn && kn.checked), kn && kn.checked ? 'On' : 'Off');
       set('light', body.classList.contains('light-mode'), body.classList.contains('light-mode') ? 'On' : 'Off');
       set('look', null, body.classList.contains('look-ind') ? 'Industrial' : 'Classic');
+      if (window.CW_PRO.test) set('protest', isPro(), isPro() ? 'On' : 'Off');
     }
     function openSheet() {
       if (curMode() === 'dual') {
@@ -4130,6 +4146,10 @@ window.CW_PRO = {
       if (s === 'light') $('#theme-toggle').click();
       if (s === 'look') $('#look-btn').click();
       if (s === 'info') { closeSheet(); $('#info-btn').click(); return; }
+      if (s === 'protest') {   // Pro-Test umschalten und neu laden, damit alle Sperren neu greifen
+        try { if (isPro()) localStorage.removeItem('cw.pro.ticket'); else localStorage.setItem('cw.pro.ticket', 'dev'); } catch (err) {}
+        location.reload(); return;
+      }
       setTimeout(syncSheet, 30);
     });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
