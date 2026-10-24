@@ -804,7 +804,7 @@
        COMPACT LAYOUT — controls docked as a left side rail
        (desktop only; below 901px the standard layout returns)
     ══════════════════════════════════════════════════ */
-    @media (min-width: 901px) {
+    @media (min-width: 901px) and (orientation: landscape), (min-width: 901px) and (pointer: fine) {
       body {
         height: 100vh; height: 100dvh;   /* hard-locked viewport — views can never push the page */
         overflow: hidden;
@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '27';
+const CW_BUILD = '28';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -884,7 +884,18 @@ try {
 window.CW_PRO = {
   test:        CW_TEST,
   status:      'soon',                                         // 'soon' | 'live'
-  price:       '€3.99',
+  price:       '€4.99',                                        // regulärer Preis
+  // Startpreis: 14 Tage ab Verkaufsstart. Zum Start launchUntil = letzter Tag (JJJJ-MM-TT) eintragen;
+  // danach schaltet die App von selbst auf den regulären Preis (Rabattcode bei Lemon Squeezy mit gleichem Enddatum).
+  launchPrice: '€3.99',
+  launchDays:  14,
+  launchUntil: '',
+  launchActive() {
+    if (this.status !== 'live' || !this.launchUntil) return false;
+    const d = new Date(), t = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return t <= this.launchUntil;
+  },
+  nowPrice() { return this.launchActive() ? this.launchPrice : this.price; },
   checkoutUrl: '',                                             // Lemon-Squeezy-Kauflink (Schritt G)
   notifyUrl:   CW_SITE + '/camelot-wheel#pro-notify', // Formular „Benachrichtige mich“
   helpUrl:     CW_SITE + '/pro',
@@ -1091,6 +1102,21 @@ window.CW_PRO = {
   });
   set(); started = true;
   addEventListener('resize', function () { set(); recheck(); });
+})();
+</script>
+<script>
+/* Tablet hochkant (iPad, 24.10.2026): fester Bildschirm wie eine App – Rad oben, Panel darunter, nichts scrollt.
+   Quer und mit Maus/Trackpad bleibt das Desktop-Layout. Schmale Fenster (Split View ≤ 600 px) bekommen die Handy-App. */
+(function () {
+  var tq = matchMedia('(pointer: coarse) and (orientation: portrait) and (min-width: 601px) and (min-height: 700px)');
+  function t() {
+    var on = tq.matches && !document.body.classList.contains('m-app');
+    document.body.classList.toggle('t-port', on);
+    document.documentElement.classList.toggle('t-root', on);
+  }
+  t();
+  if (tq.addEventListener) tq.addEventListener('change', t); else if (tq.addListener) tq.addListener(t);
+  addEventListener('resize', t);
 })();
 </script>
 <header>
@@ -1514,8 +1540,27 @@ window.CW_PRO = {
     return Math.floor(Math.max(220, Math.min(Wd, BASE, H - 64 - need)));
   }
 
+  // Tablet hochkant: freie Höhe = Oberkante Inhalt bis Unterkante Bildschirm, abzüglich Fuß und (falls darunter) Quick Select
+  function tPortSize(mode) {
+    const L = document.querySelector('.layout'), qw = document.getElementById('quickWrap'), ft = document.querySelector('footer');
+    const bodyPadB = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    const quick = document.body.classList.contains('quick-mode');
+    const qwBelow = qw && !L.contains(qw) && mode !== 'dual' && mode !== 'wheel-only' && mode !== 'default';
+    const qwInside = qw && L.contains(qw);
+    const top = L.getBoundingClientRect().top;
+    const avail = innerHeight - top - bodyPadB - (ft ? ft.offsetHeight + 12 : 0) - (qwBelow ? qw.offsetHeight + 14 : 0);
+    const aw = Math.min(innerWidth - 40, 980);
+    if (mode === 'dual')       return Math.floor(Math.max(260, Math.min((aw - 28) / 2, avail - 150)));
+    if (mode === 'wheel-only') return Math.floor(Math.max(300, Math.min(aw, avail - 8, 900)));
+    if (mode === 'no-wheel')   return BASE;
+    if (mode === 'no-panel')   return Math.floor(Math.max(300, Math.min(aw, avail - (qwInside ? qw.offsetHeight + 18 : 0), 760)));
+    const panelMin = quick ? 380 : Math.max(370, Math.round(avail * 0.36));   // Panel behält Platz für alle Stufen (Legende ausgeblendet)
+    return Math.floor(Math.max(300, Math.min(aw, avail - panelMin - 16, 680)));
+  }
+
   function calcSizeForMode(mode) {
     if (document.body.classList.contains('m-app')) return mAppSize(mode);
+    if (document.body.classList.contains('t-port')) return tPortSize(mode);
     if (window.innerWidth <= 900) {        // mobile/tablet: standard behaviour
       switch (mode) {
         case 'no-panel':   return Math.min(580, availWidth());
@@ -2581,7 +2626,9 @@ window.CW_PRO = {
       : `<div class="qm-key qm-key-empty">?</div>`;
 
     let result;
-    if (!qmA)      result = `<div class="qm-hint">Pick the <strong>first key</strong> on the wheel or in&nbsp;Quick&nbsp;Select.</div>`;
+    if (!qmA)      result = document.body.classList.contains('t-port')
+      ? `<div class="qm-hint">Pick the <strong>first key</strong> on the wheel.</div>`
+      : `<div class="qm-hint">Pick the <strong>first key</strong> on the wheel or in&nbsp;Quick&nbsp;Select.</div>`;
     else if (!qmB) result = `<div class="qm-hint">Now pick the <strong>second key</strong> to check the&nbsp;match.</div>`;
     else result = `<div class="qm-verdict" style="--vc:${meta.color}">
         <div class="qm-verdict-name">${cat ? QM_ICON[cat] : '✕'} ${meta.cat}</div>
@@ -2928,12 +2975,22 @@ window.CW_PRO = {
   function openProSheet(reason) {
     const P = window.CW_PRO, el = document.getElementById('proSheet');
     el.querySelector('.pro-why').textContent = PRO_REASON[reason] || PRO_REASON.info;
-    el.querySelectorAll('[data-pro-price]').forEach(n => n.textContent = P.price);
-    const live = P.status === 'live' && !!P.checkoutUrl;
+    const live = P.status === 'live' && !!P.checkoutUrl, launch = live && P.launchActive();
+    el.querySelectorAll('[data-pro-price]').forEach(n => n.textContent = P.nowPrice());
+    const was = el.querySelector('.pro-was');
+    if (was) { was.textContent = P.price; was.hidden = !launch; }
+    const ln = el.querySelector('.pro-launch');
+    if (ln) {
+      let until = '';
+      try { until = new Date(P.launchUntil + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }); } catch (e) {}
+      ln.textContent = launch ? `Launch price until ${until}.`
+        : live ? '' : `Launch price ${P.launchPrice} for the first ${P.launchDays} days.`;
+      ln.hidden = !ln.textContent;
+    }
     el.classList.toggle('is-live', live);
     const cta = el.querySelector('.pro-cta');
     cta.href = live ? P.checkoutUrl : P.notifyUrl;
-    cta.textContent = live ? `Buy Pro – ${P.price}` : 'Notify me when Pro launches';
+    cta.textContent = live ? `Buy Pro – ${P.nowPrice()}` : 'Notify me when Pro launches';
     el.querySelector('.pro-key').hidden = true;
     el.querySelector('.pro-msg').textContent = '';
     el.classList.add('open');
@@ -3256,6 +3313,10 @@ window.CW_PRO = {
   .pro-list li::before { content: ''; width: 8px; height: 8px; margin-top: 6px; border-radius: 3px; background: var(--c, #ffb300); }
   .pro-price { font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
   .pro-price span { font-size: .85rem; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
+  .pro-price .pro-was { font-size: .55em; font-weight: 500; color: var(--muted); margin-right: 8px; text-decoration-thickness: 2px; }
+  .pro-launch { margin: 6px 0 0; font-size: .85rem; font-weight: 600; color: #ffcc33; }
+  .pro-launch[hidden] { display: none; }
+  body.light-mode .pro-launch { color: #8a6400; }
   .pro-cta {
     display: flex; align-items: center; justify-content: center; margin-top: 18px;
     height: 48px; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: .95rem;
@@ -3572,7 +3633,7 @@ window.CW_PRO = {
   }
 
   /* ── Desktop: Kopf als fester Balken, Leisten sitzen im Balken ─────── */
-  @media (min-width: 901px) {
+  @media (min-width: 901px) and (orientation: landscape), (min-width: 901px) and (pointer: fine) {
     body.look-ind:not(#_) { padding: calc(var(--bar) + 10px) 24px 8px 24px; }
     body.look-ind:not(#_) header {
       position: fixed; top: 0; left: 0; right: 0; z-index: 400;
@@ -3609,7 +3670,7 @@ window.CW_PRO = {
   body.look-ind.light-mode:not(#_) header { background: #fff; color: #000; box-shadow: inset 0 -3px 0 #000; }
   body.look-ind.light-mode:not(#_) h1 { color: #000; }
   body.look-ind.light-mode:not(#_) .subtitle { color: #4d4d4d; border-left-color: #cfcfcf; }
-  @media (min-width: 901px) {
+  @media (min-width: 901px) and (orientation: landscape), (min-width: 901px) and (pointer: fine) {
     body.look-ind.light-mode:not(#_) .mode-sep { background: #d6d6d6; }
     body.look-ind.light-mode:not(#_) .mode-btn, body.look-ind.light-mode:not(#_) .sbar-btn, body.look-ind.light-mode:not(#_) .theme-btn { color: #5c5c5c; }
     body.look-ind.light-mode:not(#_) .mode-btn:hover, body.look-ind.light-mode:not(#_) .sbar-btn:hover, body.look-ind.light-mode:not(#_) .theme-btn:hover { background: #ececec; color: #000; }
@@ -3622,10 +3683,10 @@ window.CW_PRO = {
     body.look-ind.light-mode:not(#_) .qm-btn:hover { background: #e3e3e3; color: #000; }
     body.look-ind.light-mode:not(#_) .qm-btn.qm-active, body.look-ind.light-mode:not(#_) .qm-btn.qm-active:hover { background: var(--gold); color: #1a1200; }
   }
-  @media (min-width: 901px) and (max-width: 1240px) {
+  @media (min-width: 901px) and (max-width: 1240px) and (orientation: landscape), (min-width: 901px) and (max-width: 1240px) and (pointer: fine) {
     body.look-ind:not(#_) .subtitle { display: none; }
   }
-  @media (min-width: 901px) and (max-width: 1080px) {
+  @media (min-width: 901px) and (max-width: 1080px) and (orientation: landscape), (min-width: 901px) and (max-width: 1080px) and (pointer: fine) {
     body.look-ind:not(#_) .qm-btn { width: 44px; padding: 0; font-size: 0; gap: 0; justify-content: center; }
     body.look-ind:not(#_) h1 { font-size: 1.6rem; }
   }
@@ -3644,6 +3705,44 @@ window.CW_PRO = {
   body.look-ind[data-idle="code"]:not(#_) .qbtn:is(.ql-dim, .q-sel, .q-clash, .q-soft, .q-soft2, .q-match,
     .q-perfect, .q-mood, .q-boost1, .q-boost2, .q-boost3, .q-drop1, .q-drop2, .q-drop3)::before { opacity: 0; }
   @media (prefers-reduced-motion: reduce) { body.look-ind[data-idle="code"]:not(#_) .qbtn::before { transition: none; } }
+
+/* ══ Tablet hochkant (iPad, 24.10.2026): fester Bildschirm, Inhalt passt ohne Seiten-Scrollen ══ */
+html.t-root { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body.t-port:not(#_):not(#t) { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; padding: 14px 20px 10px; gap: 12px; }
+body.t-port:not(#_):not(#t) .layout { flex: 1 1 auto; min-height: 0; width: 100%; max-width: 980px; margin: 0 auto; flex-direction: column; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 16px; padding: 0; }
+body.t-port:not(#_):not(#t) .panel { flex: 1 1 auto; min-height: 0; height: auto; width: 100%; min-width: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+body.t-port:not(#_):not(#t) .quick-wrap { flex: none; width: 100%; max-width: 980px; min-width: 0; margin: 0 auto; }
+body.t-port:not(#_):not(#t) .panel > * { flex-shrink: 0; }
+/* Hauptansicht wie die Handy-App: großes Rad + Matches; Tasten-Raster gibt es in der Grid-Ansicht, Kategorien über den Kategorien-Knopf */
+body.t-port:not(.mode-no-panel):not(.mode-no-wheel):not(.mode-wheel-only):not(.mode-dual):not(#_):not(#t) .quick-wrap { display: none; }
+body.t-port:not(.mode-no-panel):not(.mode-no-wheel):not(.mode-wheel-only):not(.mode-dual):not(.quick-mode):not(#_):not(#t) .panel .legend { display: none; }
+body.t-port:not(#_):not(#t) footer { flex: none; margin: 0; padding: 0; }
+/* Dual: beide Räder nebeneinander, Legenden darunter */
+body.t-port.mode-dual:not(#_):not(#t) .layout { flex-direction: row; align-items: center; justify-content: center; gap: 28px; }
+body.t-port.mode-dual:not(#_):not(#t) .wheel-col { flex: none; }
+/* Rad + Raster: Raster unter dem Rad über die ganze Breite */
+body.t-port.mode-no-panel:not(#_):not(#t) .layout { justify-content: center; }
+body.t-port.mode-no-panel:not(#_):not(#t) .quick-wrap { order: 2; }
+body.t-port.mode-wheel-only:not(#_):not(#t) .layout { justify-content: center; }
+body.t-port.mode-no-wheel:not(#_):not(#t) .layout { justify-content: center; }
+body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-height: 0; }
+
+/* ══ Tablets & Touch-Laptops (iPad quer und hochkant): Bedienflächen mindestens 44 pt ══ */
+@media (pointer: coarse) and (min-width: 601px) {
+  body:not(.m-app):not(#_):not(#t) .mode-btn { min-width: 50px; min-height: 44px; }
+  body:not(.m-app):not(#_):not(#t) .sbar-btn,
+  body:not(.m-app):not(#_):not(#t) .theme-btn { min-width: 44px; min-height: 44px; }
+  body:not(.m-app):not(#_):not(#t) .qm-btn { min-height: 44px; }
+  body:not(.m-app):not(#_):not(#t) .qbtn { min-height: 44px; }
+  body:not(.m-app):not(#_):not(#t) .leg-item { min-height: 30px; }
+  body:not(.m-app):not(#_):not(#t) .toggle-switch { transform: scale(1.15); }
+  body:not(.m-app):not(#_):not(#t) .panel > * { flex-shrink: 0; }
+  body:not(.m-app):not(#_):not(#t) .panel > .cats-grid { flex: 1 0 auto; }   /* iPad quer mit Safari-Leisten: Panel scrollt statt zu überlappen */
+}
+@media (pointer: coarse) and (min-width: 601px) and (max-width: 800px) {   /* iPad mini hochkant: Leiste bleibt einzeilig */
+  body:not(.m-app):not(#_):not(#t) .mode-btn { min-width: 44px; }
+  body:not(.m-app):not(#_):not(#t) .sbar-btn, body:not(.m-app):not(#_):not(#t) .theme-btn { min-width: 40px; }
+}
 </style>
 
 <div id="proSheet" role="dialog" aria-modal="true" aria-labelledby="proTitle" onclick="if(event.target===this)__cw.closeProSheet()">
@@ -3658,9 +3757,10 @@ window.CW_PRO = {
       <li style="--c:#00e87d">Up to 3 devices, works offline</li>
       <li style="--c:#a1a1a6">All future updates included</li>
     </ul>
-    <div class="pro-price"><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€3.99</span><span>one-time · no subscription</span></div>
+    <div class="pro-price"><s class="pro-was" hidden>€4.99</s><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€4.99</span><span>one-time · no subscription</span></div>
+    <p class="pro-launch">Launch price €3.99 for the first 14 days.</p>
     <a class="pro-cta" href="#" target="_blank" rel="noopener">Notify me when Pro launches</a>
-    <p class="pro-note only-soon">Pro goes on sale soon. Leave your email and you'll hear first.</p>
+    <p class="pro-note only-soon">Pro goes on sale soon. Leave your email and you'll hear first, in time for the launch price.</p>
     <p class="pro-note only-live">Secure checkout. 14-day money-back guarantee.</p>
     <div class="pro-links">
       <button type="button" class="only-live" onclick="__cw.showProKey()">I have a license key</button>
