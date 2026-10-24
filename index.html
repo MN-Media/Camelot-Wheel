@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '28';
+const CW_BUILD = '29';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -2977,14 +2977,13 @@ window.CW_PRO = {
     el.querySelector('.pro-why').textContent = PRO_REASON[reason] || PRO_REASON.info;
     const live = P.status === 'live' && !!P.checkoutUrl, launch = live && P.launchActive();
     el.querySelectorAll('[data-pro-price]').forEach(n => n.textContent = P.nowPrice());
-    const was = el.querySelector('.pro-was');
-    if (was) { was.textContent = P.price; was.hidden = !launch; }
     const ln = el.querySelector('.pro-launch');
     if (ln) {
       let until = '';
       try { until = new Date(P.launchUntil + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }); } catch (e) {}
-      ln.textContent = launch ? `Launch price until ${until}.`
-        : live ? '' : `Launch price ${P.launchPrice} for the first ${P.launchDays} days.`;
+      // Einführungspreis, keine Preissenkung: kein durchgestrichener Preis, sondern Hinweis auf den späteren Preis
+      ln.textContent = launch ? `Launch price until ${until}, then ${P.price}.`
+        : live ? '' : `Launch price ${P.launchPrice} for the first ${P.launchDays} days, then ${P.price}.`;
       ln.hidden = !ln.textContent;
     }
     el.classList.toggle('is-live', live);
@@ -3157,6 +3156,8 @@ window.CW_PRO = {
   }
   body.light-mode .info-card h3 { border-bottom-color: rgba(0,0,0,.10); }
   .info-card p { margin: 0 0 10px; color: var(--text); opacity: .88; }
+  .info-card p.info-ears { margin: 16px 0 6px; padding: 12px 14px; border-left: 3px solid #a7ff9c; background: rgba(255,255,255,.05); line-height: 1.5; opacity: 1; }
+  body.light-mode .info-card p.info-ears { border-left-color: #00a85a; background: rgba(0,0,0,.04); }
 
   /* Category rows — thin frame in the colour of the match type */
   .info-cat-list { display: flex; flex-direction: column; gap: 9px; }
@@ -3313,7 +3314,6 @@ window.CW_PRO = {
   .pro-list li::before { content: ''; width: 8px; height: 8px; margin-top: 6px; border-radius: 3px; background: var(--c, #ffb300); }
   .pro-price { font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
   .pro-price span { font-size: .85rem; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
-  .pro-price .pro-was { font-size: .55em; font-weight: 500; color: var(--muted); margin-right: 8px; text-decoration-thickness: 2px; }
   .pro-launch { margin: 6px 0 0; font-size: .85rem; font-weight: 600; color: #ffcc33; }
   .pro-launch[hidden] { display: none; }
   body.light-mode .pro-launch { color: #8a6400; }
@@ -3757,8 +3757,8 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
       <li style="--c:#00e87d">Up to 3 devices, works offline</li>
       <li style="--c:#a1a1a6">All future updates included</li>
     </ul>
-    <div class="pro-price"><s class="pro-was" hidden>€4.99</s><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€4.99</span><span>one-time · no subscription</span></div>
-    <p class="pro-launch">Launch price €3.99 for the first 14 days.</p>
+    <div class="pro-price"><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€4.99</span><span>one-time · no subscription</span></div>
+    <p class="pro-launch">Launch price €3.99 for the first 14 days, then €4.99.</p>
     <a class="pro-cta" href="#" target="_blank" rel="noopener">Notify me when Pro launches</a>
     <p class="pro-note only-soon">Pro goes on sale soon. Leave your email and you'll hear first, in time for the launch price.</p>
     <p class="pro-note only-live">Secure checkout. 14-day money-back guarantee.</p>
@@ -3851,7 +3851,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
 
     <p>The standard Camelot wheel gives you three compatibility types: same key, one step adjacent, and relative major/minor. Camelot Wheel expands this to <strong>8 directional match categories</strong> (Core includes level 1 of each energy direction, <span class="pro-tag" style="font-size:inherit;letter-spacing:inherit;">Pro</span> adds levels 2 and 3) — letting you plan not just <em>which</em> keys mix, but <em>how</em> the energy of a set moves with each transition.</p>
 
-    <h3>Why this wheel is different</h3>
+    <h3>The Camelot wheel, extended</h3>
     <p>Traditional harmonic mixing only answers "will these keys clash?" This wheel answers "where does this take the crowd?" Boost moves raise perceived energy and tension. Drop moves lower it. Each level quantifies how dramatic the shift is — so you can plan a slow burn build, a peak-time push, or a smooth comedown with precision.</p>
     <p>The result: <strong class="gold-em">up to 8× more intentional transitions per key</strong> compared to a standard wheel, each with a defined energy direction.</p>
 
@@ -3898,6 +3898,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
         <span class="info-cat-desc">Maximum energy drop. A powerful comedown — ideal for closing a peak, introducing a break, or pivoting to a completely different vibe. <span class="needs-pro">Requires Pro</span></span>
       </div>
     </div>
+    <p class="info-ears"><strong>Your ears decide.</strong> The categories follow music theory: they show which keys fit and what each move does harmonically. But every track brings its own energy, from groove and sound to arrangement and vocals. A harmonic boost points the way, it doesn't guarantee a great mix. Camelot Wheel doesn't replace your ears. It's your guide, and it shows you far more options than the classic wheel.</p>
 
     <h3>How to use</h3>
     <div class="info-steps">
