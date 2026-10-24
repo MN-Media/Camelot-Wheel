@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '26';
+const CW_BUILD = '27';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -4145,6 +4145,28 @@ window.CW_PRO = {
   #mSheet .ms-sub { margin: 18px 0 8px; font: 700 .68rem/1 var(--f-text, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--m-dim); }
   #mSheet .cat-dropdown { position: static !important; transform: none !important; display: grid !important; width: auto !important; max-width: none !important; margin: 0 !important; left: auto !important; top: auto !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; background: transparent !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
   #mSheet .wheel-legend { display: grid !important; margin: 0 0 6px; }
+  /* Kategorie-Schalter groß (24.10.2026): ganze Zeile als 48-pt-Tippfläche, größere Schalter, mehr Raum */
+  #mSheet#mSheet .cat-dropdown, #mSheet#mSheet .wheel-legend { grid-template-columns: 1fr 1fr; gap: 4px 12px !important; }
+  #mSheet#mSheet .wheel-legend { padding: 4px 0 !important; background: transparent !important; border: 0 !important; }
+  #mSheet#mSheet .cat-drop-row, #mSheet#mSheet .leg-item {
+    min-height: 48px; padding: 4px 2px; gap: 10px; border-radius: 0; background: transparent;
+    font-size: .84rem; -webkit-tap-highlight-color: transparent;
+  }
+  #mSheet#mSheet .cat-drop-name { font-size: .84rem; }
+  #mSheet#mSheet .cat-drop-row:active, #mSheet#mSheet .leg-item:active { opacity: .6; }
+  #mSheet#mSheet .cat-drop-dot, #mSheet#mSheet .leg-dot { width: 10px; height: 10px; }
+  body.look-ind #mSheet#mSheet .cat-drop-dot, body.look-ind #mSheet#mSheet .leg-dot { width: 6px; height: 18px; border-radius: 0; }
+  #mSheet#mSheet .cat-drop-divider { margin: 6px 0; }
+  /* Schalter Classic: iOS-artig */
+  #mSheet#mSheet .cat-drop-pill, #mSheet#mSheet .leg-mini-pill { width: 44px; height: 26px; border-radius: 13px; border-width: 1.5px; margin-left: auto; }
+  #mSheet#mSheet .cat-drop-pill::after, #mSheet#mSheet .leg-mini-pill::after { top: 3px; right: 3px; width: 17px; height: 17px; border-radius: 50%; }
+  #mSheet#mSheet .cat-drop-row.cat-off .cat-drop-pill::after, #mSheet#mSheet .leg-item.leg-off .leg-mini-pill::after { right: auto; left: 3px; }
+  /* Schalter Industrial: eckig */
+  body.look-ind #mSheet#mSheet .cat-drop-pill, body.look-ind #mSheet#mSheet .leg-mini-pill { width: 42px; height: 24px; border-radius: 0; border-width: 2px; }
+  body.look-ind #mSheet#mSheet .cat-drop-pill::after, body.look-ind #mSheet#mSheet .leg-mini-pill::after { top: 4px; right: 4px; width: 12px; height: 12px; border-radius: 0; }
+  body.look-ind #mSheet#mSheet .cat-drop-row.cat-off .cat-drop-pill::after, body.look-ind #mSheet#mSheet .leg-item.leg-off .leg-mini-pill::after { right: auto; left: 4px; }
+  /* Pro-Schloss passend größer */
+  #mSheet#mSheet .cat-drop-row.cat-locked .cat-drop-pill, #mSheet#mSheet .leg-item.leg-locked .leg-mini-pill { width: 18px; height: 18px; margin-right: 12px; }
   /* ═══ Classic-Look auf dem Handy (23.10.2026): Apple-Stil statt Industrial ═══ */
   body.m-app:not(.look-ind):not(#m):not(#n) {
     --m-bg: var(--bg); --m-card: #1c1c1e; --m-ink: var(--text); --m-dim: var(--muted); --m-line: rgba(255,255,255,.12);
