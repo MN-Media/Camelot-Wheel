@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '21';
+const CW_BUILD = '22';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -911,6 +911,68 @@ window.CW_PRO = {
 /* Handy-App-Rahmen (22.10.2026): auf Touch-Telefonen ein fester Bildschirm statt einer Webseite */
 (function () {
   var mq = matchMedia('(pointer: coarse) and (max-width: 600px), (pointer: coarse) and (max-height: 500px)');
+
+  /* Startbildschirm (24.10.2026): nur Handy-App, einmal pro App-Start (Antippen überspringt, ?nosplash schaltet ab) */
+  var CW_SPLASH_TAGLINE = 'Mix in harmony.';
+  (function () {
+    var skip = !mq.matches || /[?&]nosplash\b/.test(location.search);
+    try { if (sessionStorage.getItem('cw.splash')) skip = true; else sessionStorage.setItem('cw.splash', '1'); } catch (e) {}
+    if (skip) return;
+    var b = document.body, ind = b.classList.contains('look-ind'), light = b.classList.contains('light-mode'), pro = false;
+    try { pro = !!(window.CW_PRO && window.CW_PRO.isPro()); } catch (e) {}
+    var css = document.createElement('style');
+    css.textContent =
+      '#cwSplash{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#000;color:#fff;transition:opacity .5s ease,transform .5s ease;-webkit-user-select:none;user-select:none}' +
+      '#cwSplash.sp-light{background:#fff;color:#000}' +
+      '#cwSplash .sp-in{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:-6vh}' +
+      '#cwSplash .sp-hex{width:58px;height:66px;fill:none;stroke:currentColor;stroke-width:8;stroke-linejoin:round;stroke-dasharray:262;stroke-dashoffset:262}' +
+      '#cwSplash .sp-row{display:flex;flex-direction:column;align-items:center;gap:12px}' +
+      '#cwSplash .sp-name{font:400 2.7rem/.95 Anton,Impact,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.02em;opacity:0;transform:translateY(12px)}' +
+      '#cwSplash.sp-cls .sp-name{font:700 2.1rem/1.1 -apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;text-transform:none;letter-spacing:-.025em}' +
+      '#cwSplash .sp-tier{font:700 .82rem/1 "Work Sans",system-ui,sans-serif;padding:.38em .62em .34em;opacity:0;transform:scale(.6)}' +
+      '#cwSplash.sp-ind .sp-core{background:#88c4ff;color:#001228}#cwSplash.sp-ind .sp-pro{background:#ffcc33;color:#1a1200}' +
+      '#cwSplash.sp-cls .sp-tier{padding:0;font:600 1rem/1 -apple-system,"Helvetica Neue",Arial,sans-serif}' +
+      '#cwSplash.sp-cls .sp-core{color:#2997ff}#cwSplash.sp-cls .sp-pro{color:#ffb300}' +
+      '#cwSplash .sp-tag{margin-top:14px;font:600 .78rem/1 "Work Sans",system-ui,sans-serif;letter-spacing:.34em;text-transform:uppercase;color:#a3a3a3;opacity:0;padding-left:.34em}' +
+      '#cwSplash.sp-cls .sp-tag{font:500 .82rem/1 -apple-system,"Helvetica Neue",Arial,sans-serif;letter-spacing:.2em;padding-left:.2em}' +
+      '#cwSplash.sp-light .sp-tag{color:#777}' +
+      '#cwSplash.sp-go .sp-hex{animation:sp-draw .8s cubic-bezier(.65,0,.35,1) forwards}' +
+      '#cwSplash.sp-go .sp-name{animation:sp-up .6s .35s cubic-bezier(.2,.8,.2,1) forwards}' +
+      '#cwSplash.sp-go .sp-tier{animation:sp-pop .5s .75s cubic-bezier(.34,1.56,.64,1) forwards}' +
+      '#cwSplash.sp-go .sp-tag{animation:sp-tag .9s 1s cubic-bezier(.2,.8,.2,1) forwards}' +
+      '#cwSplash.sp-out{opacity:0;transform:scale(1.04);pointer-events:none}' +
+      '@keyframes sp-draw{to{stroke-dashoffset:0}}@keyframes sp-up{to{opacity:1;transform:none}}@keyframes sp-pop{to{opacity:1;transform:none}}' +
+      '@keyframes sp-tag{from{opacity:0;letter-spacing:.7em}to{opacity:1}}' +
+      '@media (prefers-reduced-motion:reduce){#cwSplash *{animation:none!important;opacity:1!important;transform:none!important;stroke-dashoffset:0!important}}';
+    document.head.appendChild(css);
+    var sp = document.createElement('div');
+    sp.id = 'cwSplash'; sp.setAttribute('aria-hidden', 'true');
+    sp.className = (ind ? 'sp-ind' : 'sp-cls') + (light ? ' sp-light' : '');
+    sp.innerHTML = '<div class="sp-in"><svg class="sp-hex" viewBox="0 0 88 100"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5"/></svg>' +
+      '<div class="sp-row"><div class="sp-name">Camelot Wheel</div><span class="sp-tier ' + (pro ? 'sp-pro">Pro' : 'sp-core">Core') + '</span></div>' +
+      '<div class="sp-tag">' + CW_SPLASH_TAGLINE + '</div></div>';
+    b.appendChild(sp);
+    var gone = false, outT = null;
+    function out(fast) {
+      if (gone) return; gone = true; clearTimeout(outT);
+      sp.style.transitionDuration = fast ? '.25s' : '';
+      sp.classList.add('sp-out');
+      setTimeout(function () { sp.remove(); css.remove(); }, fast ? 300 : 560);
+    }
+    sp.addEventListener('pointerdown', function () { out(true); });
+    function go() {
+      if (gone || sp.classList.contains('sp-go')) return;
+      sp.classList.add('sp-go');
+      outT = setTimeout(out, 2150);
+    }
+    function ready() {   // Schrift (Anton, eingebettet) abwarten, höchstens 0,6 s
+      var f = document.fonts && document.fonts.load ? document.fonts.load('40px Anton') : null;
+      var cap = setTimeout(go, 600);
+      if (f) f.then(function () { clearTimeout(cap); go(); }, function () {});
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
+    setTimeout(function () { out(true); }, 5000);   // Sicherheitsnetz
+  })();
   /* iOS-Höhenfehler (23.10.2026): installierte App meldet die Höhe um die Statusleiste zu kurz */
   var standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
   /* Home-Balken-Abstand (23.10.2026): ohne viewport-fit=cover meldet iOS keinen Sicherheitsabstand,
@@ -975,7 +1037,16 @@ window.CW_PRO = {
     fixHeight();
     heal('check');
     if (sides()) changed = true;
-    if (changed && started) setTimeout(function () { dispatchEvent(new Event('resize')); }, 60);   // Rad & Abstände neu bemessen
+    if (changed && started) { rotCover(); setTimeout(function () { dispatchEvent(new Event('resize')); }, 60); }   // Rad & Abstände neu bemessen
+  }
+  /* Weich drehen (24.10.2026): Zwischenschritte beim Umbau verdecken, danach in einem Zug einblenden */
+  var rotT = null, rotStart = 0;
+  function rotCover() {
+    var b = document.body, now = Date.now();
+    if (!b.classList.contains('m-app')) { b.classList.remove('m-rot'); return; }
+    if (!b.classList.contains('m-rot')) { rotStart = now; b.classList.add('m-rot'); }
+    clearTimeout(rotT);
+    rotT = setTimeout(function () { b.classList.remove('m-rot'); }, Math.max(0, Math.min(380, 1200 - (now - rotStart))));
   }
   /* Selbstreparatur (24.10.2026): iOS lässt nach dem Drehen die Seite manchmal verschoben/gezoomt zurück –
      Anzeige und Berührung passen dann nicht mehr zusammen. Prüfen und sofort zurücksetzen. */
@@ -3815,6 +3886,8 @@ window.CW_PRO = {
   /* ═══ Handy-App-Rahmen (m-app) ═══════════════════════════════════════════ */
   #mTabs, #mSeg, #mSheet { display: none; }
   html.m-root { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body.m-app > header, body.m-app .layout, body.m-app #mTabs { transition: opacity .26s ease; }
+  body.m-app.m-rot > header, body.m-app.m-rot .layout, body.m-app.m-rot #mTabs { opacity: 0 !important; transition: none !important; }
   body.m-app:not(#m):not(#n) {
     --m-bg: #000; --m-card: #111; --m-ink: #fff; --m-dim: #8a8a8a; --m-line: #262626; --m-act: #a7ff9c; --m-act-ink: #000; --m-gold: #ffcc33;
     position: fixed; inset: 0; height: auto; min-height: 0; overflow: hidden; overscroll-behavior: none;
