@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '23';
+const CW_BUILD = '24';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -925,7 +925,7 @@ window.CW_PRO = {
       '#cwSplash{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#000;color:#fff;transition:opacity .5s ease,transform .5s ease;-webkit-user-select:none;user-select:none}' +
       '#cwSplash.sp-light{background:#fff;color:#000}' +
       '#cwSplash .sp-in{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:-6vh}' +
-      '#cwSplash .sp-hex{width:58px;height:66px;fill:none;stroke:currentColor;stroke-width:8;stroke-linejoin:round;stroke-dasharray:262;stroke-dashoffset:262}' +
+      '#cwSplash .sp-hex{width:58px;height:66px;fill:none;stroke:currentColor;stroke-width:8;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:262;stroke-dashoffset:262}#cwSplash .sp-hex.sp-done{stroke-dasharray:none;animation:none}' +
       '#cwSplash .sp-row{display:flex;flex-direction:column;align-items:center;gap:12px}' +
       '#cwSplash .sp-name{font:400 2.7rem/.95 Anton,Impact,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.02em;opacity:0;transform:translateY(12px)}' +
       '#cwSplash.sp-cls .sp-name{font:700 2.1rem/1.1 -apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;text-transform:none;letter-spacing:-.025em}' +
@@ -960,6 +960,7 @@ window.CW_PRO = {
       setTimeout(function () { sp.remove(); css.remove(); }, fast ? 300 : 560);
     }
     sp.addEventListener('pointerdown', function () { out(true); });
+    sp.querySelector('.sp-hex').addEventListener('animationend', function () { this.classList.add('sp-done'); });   // danach durchgehende Linie ohne Ansatz
     addEventListener('keydown', function () { out(true); }, { once: true });
     function go() {
       if (gone || sp.classList.contains('sp-go')) return;
@@ -1369,7 +1370,7 @@ window.CW_PRO = {
   function showTouchHint() { showTipTouch(null, true); }
   (() => {
     if (!matchMedia('(any-pointer: coarse)').matches) return;
-    let timer = null, sx = 0, sy = 0, shownAt = 0, held = false, swallow = 0;
+    let timer = null, sx = 0, sy = 0, shownAt = 0, held = false, swallow = 0, closing = false;
     const resolve = (el, x, y) => {
       if (!el) return null;
       if (el.id === 'wheel') {
@@ -1387,9 +1388,13 @@ window.CW_PRO = {
     };
     document.addEventListener('touchstart', e => {
       clearTimeout(timer);
-      held = false; swallow = 0;   // neue Berührung: vorheriges Halten zählt nicht mehr
+      held = false; swallow = 0; closing = false;   // neue Berührung: vorheriges Halten zählt nicht mehr
+      /* Tipp wegtippen (24.10.2026): sichtbarer Tipp → dieses Antippen schließt nur den Tipp */
+      const tipEl = document.getElementById('cwTip');
+      if (tipEl && tipEl.classList.contains('tip-touch') && tipEl.classList.contains('tip-visible')) {
+        hideTip(); clearTimeout(tipTouchTimer); closing = true; return;
+      }
       if (!tipsEnabled || e.touches.length !== 1) return;
-      if (Date.now() - shownAt > 900) hideTip();
       const tch = e.touches[0], target = e.target;
       sx = tch.clientX; sy = tch.clientY;
       timer = setTimeout(() => {
@@ -1406,7 +1411,7 @@ window.CW_PRO = {
     }, { passive: true });
     document.addEventListener('touchend', e => {
       clearTimeout(timer);
-      if (held) { e.preventDefault(); swallow = Date.now(); held = false; }   // kein Klick nach dem Halten
+      if (held || closing) { e.preventDefault(); swallow = Date.now(); held = false; closing = false; }   // kein Klick nach dem Halten / Schließen
     }, { passive: false });
     document.addEventListener('touchcancel', () => clearTimeout(timer), { passive: true });
     document.addEventListener('click', e => {
@@ -4041,6 +4046,9 @@ window.CW_PRO = {
   body.m-app.m-land.m-isl-l:not(#m):not(#n) #mTabs { order: -1; border-left: 0; border-right: 2px solid var(--m-line); }
   body.m-app.m-land.m-isl-l:not(.look-ind):not(#m):not(#n) #mTabs { border-right-width: .5px; }
   body.m-app.m-land.m-isl-l #cwTip.tip-touch { left: calc(50% + 48px); }
+  /* Ecke frei (24.10.2026): oben rechts liegt die Bildschirmrundung → Umschalter und Quick Check leicht nach unten/innen */
+  body.m-app.m-land.m-isl-l:not(#m):not(#n) #mSeg { margin: 8px 18px 0 0; width: auto; }
+  body.m-app.m-land.m-isl-l.quick-mode:not(#m):not(#n) .panel { margin: 8px 18px 0 0; width: auto; min-width: 0; height: calc(100% - 8px); }
   body.m-app.m-land #mSheet .ms-card { padding-right: var(--m-sr, 18px); }
   /* Grid & Keys quer: Tasten füllen die Höhe */
   body.m-app.m-land.mode-no-wheel:not(#m):not(#n) .layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
