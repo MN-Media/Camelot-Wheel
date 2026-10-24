@@ -917,7 +917,6 @@ window.CW_PRO = {
   var noZoom = function (e) { if (document.body.classList.contains('m-app')) e.preventDefault(); };
   document.addEventListener('gesturestart', noZoom, { passive: false });
   document.addEventListener('gesturechange', noZoom, { passive: false });
-  document.addEventListener('touchmove', function (e) { if (e.touches.length > 1) noZoom(e); }, { passive: false });
   /* Drehen zuverlässig (23.10.2026): Ausrichtung per Media-Query, beim Drehen mehrfach nachprüfen */
   var mqLand = matchMedia('(orientation: landscape)');
   var vpNow = null, started = false;
@@ -1442,7 +1441,7 @@ window.CW_PRO = {
   let compat       = null;
   let showKeyNames = (() => { try { return localStorage.getItem('cw.kn') === '1'; } catch (e) { return false; } })();
   let lightMode    = document.body.classList.contains('light-mode');
-  let tipsEnabled  = false;   // Mixing Tips — off by default
+  let tipsEnabled  = (() => { try { return localStorage.getItem('cw.tips') === '1'; } catch (e) { return false; } })();   // Mixing Tips — aus, bis eingeschaltet (wird gemerkt)
   const disabledCats = new Set(['boostLv2','boostLv3','dropLv2','dropLv3']);
   const isPro = () => window.CW_PRO.isPro();
   const proLocked = cat => !isPro() && window.CW_PRO.cats.includes(cat);
@@ -1503,7 +1502,9 @@ window.CW_PRO = {
   function rafTick(ts) {
     const dt = Math.min((ts - rafTs) / 1000, 0.05);
     rafTs = ts; animTime += dt;
-    let needsMore = !!selected || (quickMode && !!qmA);
+    /* Puls sparsam (24.10.2026): Dauer-Puls nicht mehr bei jedem Frame, unsichtbares Rad gar nicht zeichnen */
+    const keepPulse = !!selected || (quickMode && !!qmA);
+    let needsMore = false;
 
     for (const code of Object.keys(segAnim)) {
       const a = segAnim[code];
@@ -1527,8 +1528,13 @@ window.CW_PRO = {
     if (Math.abs(qmFocus.v - qmFocus.target) > 0.01) needsMore = true;
     else qmFocus.v = qmFocus.target;
 
-    draw();
-    rafId = needsMore ? requestAnimationFrame(rafTick) : null;
+    const hidden = document.hidden || !canvas.getClientRects().length;
+    if (needsMore || !hidden) draw();
+    if (needsMore) rafId = requestAnimationFrame(rafTick);
+    else if (keepPulse && !hidden) rafId = document.body.classList.contains('m-app')
+      ? setTimeout(() => { rafId = requestAnimationFrame(rafTick); }, 45)   // Handy: ruhiger Puls ~22×/s
+      : requestAnimationFrame(rafTick);
+    else rafId = null;
   }
 
   // ── Look „Industrial": flache Flächen, keine Glows, Anton/Work Sans ────
@@ -2157,6 +2163,7 @@ window.CW_PRO = {
   // ── Categories dropdown ───────────────────────────────────────────────
   function toggleTips() {
     tipsEnabled = !tipsEnabled;
+    try { localStorage.setItem('cw.tips', tipsEnabled ? '1' : '0'); } catch (e) {}
     if (!tipsEnabled) hideTip();
     else if (TOUCH_ONLY) showTouchHint();
     // update the tips row in the dropdown
@@ -2578,7 +2585,7 @@ window.CW_PRO = {
     function kick() { if (!raf) { ts = performance.now(); raf = requestAnimationFrame(tick); } }
     function tick(now) {
       const dt = Math.min((now - ts)/1000, .05); ts = now; t += dt;
-      let more = !!sel;
+      let more = false;
       const sfT = sel ? 0 : 1;
       sf.v += (sfT - sf.v) * Math.min(dt * 4.5, 1);
       if (Math.abs(sf.v - sfT) > .01) more = true; else sf.v = sfT;
@@ -2593,8 +2600,13 @@ window.CW_PRO = {
       const fc = -SPRING_K*(cAnim.scale-1) - SPRING_D*cAnim.vel;
       cAnim.vel += fc*dt; cAnim.scale += cAnim.vel*dt;
       if (Math.abs(cAnim.scale-1)>.001 || Math.abs(cAnim.vel)>.005) more = true;
-      draw2();
-      raf = more ? requestAnimationFrame(tick) : null;
+      const hid = document.hidden || !cv.getClientRects().length;
+      if (more || !hid) draw2();
+      if (more) raf = requestAnimationFrame(tick);
+      else if (sel && !hid) raf = document.body.classList.contains('m-app')
+        ? setTimeout(() => { raf = requestAnimationFrame(tick); }, 45)
+        : requestAnimationFrame(tick);
+      else raf = null;
     }
 
     function seg(pos, isB, state) {
@@ -2758,7 +2770,7 @@ window.CW_PRO = {
       targets(); kick(); draw2();
     }
 
-    return { applySize, draw: draw2, toggleCat, deselect, dcats };
+    return { applySize, draw: draw2, toggleCat, deselect, dcats, kick };
   })();
 
   // Category legends under both wheels (dual view)
@@ -2844,6 +2856,11 @@ window.CW_PRO = {
     updateAnimTargets(); startRaf(); draw(); updatePanel(); updateQuick(); updateCatDropdown();
   }
   applyProState();
+
+  // Puls wieder anwerfen, sobald das Rad wieder sichtbar ist (Ansichtswechsel, Drehen, App zurück im Vordergrund)
+  const pulseResume = () => { startRaf(); if (currentMode === 'dual') wheel2.kick(); };
+  new MutationObserver(pulseResume).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pulseResume(); });
 
   window.__cw = { buildCatDropdown, setModeSoft, select, toggle, toggleCat, toggleTips, qmSwap, qmReset, toggleCatL, toggleTipsDual, toggleCatR: wheel2.toggleCat,
                   openProSheet, closeProSheet, showProKey, activateProKey };
@@ -3930,6 +3947,9 @@ window.CW_PRO = {
   body.m-app.m-land:not(.look-ind) #mSheet .ms-card { border-left: 0; border-radius: 14px 0 0 14px; }
   body.m-app.m-land:not(.look-ind) #mSheet .ms-card::before { display: none; }
 
+  /* Sparsam (24.10.2026): kein Dauer-Atmen der gewählten Taste, kein Milchglas quer (malte bei jedem Frame neu) */
+  body.m-app:not(.look-ind) .qbtn.q-sel { animation: none !important; }
+  body.m-app.m-land:not(.look-ind):not(#m):not(#n) #mTabs { -webkit-backdrop-filter: none; backdrop-filter: none; }
   /* Weicher Wechsel Matches ↔ Keys: nur der Bereich unter dem Rad blendet ein */
   @keyframes m-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } }
   body.m-app .m-in { animation: m-in .26s cubic-bezier(.25, .46, .45, .94) both; }
