@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '22';
+const CW_BUILD = '23';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -915,7 +915,7 @@ window.CW_PRO = {
   /* Startbildschirm (24.10.2026): nur Handy-App, einmal pro App-Start (Antippen überspringt, ?nosplash schaltet ab) */
   var CW_SPLASH_TAGLINE = 'Mix in harmony.';
   (function () {
-    var skip = !mq.matches || /[?&]nosplash\b/.test(location.search);
+    var skip = window.top !== window.self || /[?&]nosplash\b/.test(location.search);   // auch Desktop, nicht im iframe
     try { if (sessionStorage.getItem('cw.splash')) skip = true; else sessionStorage.setItem('cw.splash', '1'); } catch (e) {}
     if (skip) return;
     var b = document.body, ind = b.classList.contains('look-ind'), light = b.classList.contains('light-mode'), pro = false;
@@ -960,6 +960,7 @@ window.CW_PRO = {
       setTimeout(function () { sp.remove(); css.remove(); }, fast ? 300 : 560);
     }
     sp.addEventListener('pointerdown', function () { out(true); });
+    addEventListener('keydown', function () { out(true); }, { once: true });
     function go() {
       if (gone || sp.classList.contains('sp-go')) return;
       sp.classList.add('sp-go');
@@ -2965,7 +2966,8 @@ window.CW_PRO = {
   new MutationObserver(pulseResume).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pulseResume(); });
 
-  window.__cw = { buildCatDropdown, setModeSoft, select, toggle, toggleCat, toggleTips, qmSwap, qmReset, toggleCatL, toggleTipsDual, toggleCatR: wheel2.toggleCat,
+  window.__cw = { qmPrev: m => { qmPrevMode = m; },   // Quick-Ausstieg direkt (24.10.2026): Ziel statt alter Ansicht
+    buildCatDropdown, setModeSoft, select, toggle, toggleCat, toggleTips, qmSwap, qmReset, toggleCatL, toggleTipsDual, toggleCatR: wheel2.toggleCat,
                   openProSheet, closeProSheet, showProKey, activateProKey };
 
   // ── Tip delegation: Quick-Select grid & Panel chips ───────────────────
@@ -4279,7 +4281,7 @@ window.CW_PRO = {
     function go(mode) {
       if (mode === 'dual' && !isPro()) { modeBtn('dual').click(); return; }
       const run = () => { if (curMode() !== mode) modeBtn(mode).click(); };
-      if (quick()) { qmBtn.click(); setTimeout(run, 300); } else run();
+      if (quick()) { window.__cw.qmPrev(mode); qmBtn.click(); setTimeout(run, 300); } else run();   // direkt ins Ziel, ohne Umweg über die alte Ansicht
     }
     tabs.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
