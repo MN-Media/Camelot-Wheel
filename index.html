@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '29';
+const CW_BUILD = '30';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -3382,7 +3382,7 @@ window.CW_PRO = {
   }
   body.look-ind.light-mode:not(#_) h1 { color: #fff; }
   body.look-ind:not(#_) .brand-hex { height: 0.78em; width: 0.69em; vertical-align: 0; margin-right: 0.38em; }
-  body.look-ind:not(#_) .brand-hex polygon { stroke-width: 12; stroke-linejoin: miter; }
+  body.look-ind:not(#_) .brand-hex polygon { stroke-width: 12; stroke-linejoin: round; }
   body.look-ind:not(#_) .subtitle {
     margin: 0; padding-left: 18px; border-left: 2px solid #3a3a3a;
     font-size: .8rem; font-weight: 600; color: #bdbdbd; letter-spacing: 0; line-height: 1.2;
