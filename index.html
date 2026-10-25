@@ -710,6 +710,7 @@
       box-shadow: 0 6px 24px rgba(0,0,0,.14);
     }
     body.light-mode #cwTip .tip-body { color: rgba(0,0,20,.65); }
+    #cwTip .tip-more, .qm-verdict-body .tip-more, .info-cat-more { opacity: .62; }
     /* Touch: Tipp als Karte unten (Finger verdeckt sonst die Stelle) */
     #cwTip.tip-touch { left: 50%; top: auto; bottom: calc(18px + env(safe-area-inset-bottom)); width: max-content; max-width: min(92vw, 380px); transform: translate(-50%, 8px); font-size: .82rem; }
     #cwTip.tip-touch.tip-visible { transform: translate(-50%, 0); }
@@ -875,7 +876,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '31';
+const CW_BUILD = '32';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -1499,16 +1500,29 @@ window.CW_PRO = {
   }
 
   // ── Mixing Tips ───────────────────────────────────────────────────────
+  // Erst die Handlung (schnell erfassbar), dann in Klammern die Begründung (gemeinsame Skalentöne).
+  // Level = wie stark die Energieänderung spürbar ist, nicht wie weit die Tonarten auseinanderliegen.
   const MIX_TIPS = {
-    perfect:  { cat:'Perfect Match',  color:'#00e87d', body:'Same harmonic centre, opposite mode (major ↔ minor). The smoothest transition possible — energy stays constant, only the emotional colour shifts.' },
-    mood:     { cat:'Mood Change',    color:'#dc44c4', body:'Harmonically linked but emotionally distinct. Great for surprising pivots, section breaks, or switching the vibe without clashing.' },
-    boostLv1: { cat:'Boost Lv 1',    color:'#ffd060', body:'One step up the circle of fifths. The most natural energy lift in harmonic mixing — builds momentum and brightens the feel.' },
-    boostLv2: { cat:'Boost Lv 2',    color:'#ff9400', body:'Two steps up. A noticeable increase in brightness and drive. Good for a pre-drop push or escalating the energy mid-set.' },
-    boostLv3: { cat:'Boost Lv 3',    color:'#ff4400', body:'Maximum boost. A bold, dramatic leap forward — creates tension and anticipation. Use sparingly for climactic moments.' },
-    dropLv1:  { cat:'Drop Lv 1',     color:'#88c4ff', body:'One step down the circle. A gentle release of tension — perfect for a cool-down after a peak or easing into a deeper groove.' },
-    dropLv2:  { cat:'Drop Lv 2',     color:'#4d8aff', body:'Two steps down. Noticeably cooler and more relaxed — signals a new phase, a darker groove, or a change of direction.' },
-    dropLv3:  { cat:'Drop Lv 3',     color:'#2040f0', body:'Maximum energy drop. A powerful comedown — ideal for breaks, endings, or pivoting to a completely different vibe.' },
+    perfect:  { cat:'Perfect Match', color:'#00e87d', lead:'Blend freely, long overlaps work.', more:'Same key or its diagonal neighbour. 6–7 of 7 notes shared.', body:'Blend freely, long overlaps work. (→ Same key or its diagonal neighbour. 6–7 of 7 notes shared.)' },
+    mood:     { cat:'Mood Change', color:'#dc44c4', lead:'Short, clean transition. Changes the emotion, not the energy.', more:'Same root, minor ↔ major. 4 of 7 notes shared.', body:'Short, clean transition. Changes the emotion, not the energy. (→ Same root, minor ↔ major. 4 of 7 notes shared.)' },
+    boostLv1: { cat:'Boost Lv 1', color:'#ffd060', lead:'Gentle lift, long blends are fine.', more:'One step up the circle of fifths, or minor → relative major. 6–7 of 7 notes shared.', body:'Gentle lift, long blends are fine. (→ One step up the circle of fifths, or minor → relative major. 6–7 of 7 notes shared.)' },
+    boostLv2: { cat:'Boost Lv 2', color:'#ff9400', lead:'Keep the overlap short, ideally over drums or a break. A change of colour more than a push.', more:'Key moves up a minor third. 4 of 7 notes shared.', body:'Keep the overlap short, ideally over drums or a break. A change of colour more than a push. (→ Key moves up a minor third. 4 of 7 notes shared.)' },
+    boostLv3: { cat:'Boost Lv 3', color:'#ff4400', lead:'Mix fast. The classic key-change lift.', more:'Up a whole tone, 5 of 7 notes shared. In brackets: up a semitone, only 2 of 7 shared, the strongest jolt.', body:'Mix fast. The classic key-change lift. (→ Up a whole tone, 5 of 7 notes shared. In brackets: up a semitone, only 2 of 7 shared, the strongest jolt.)' },
+    dropLv1:  { cat:'Drop Lv 1', color:'#88c4ff', lead:'Soft cool-down, long blends are fine.', more:'One step down the circle of fifths, or major → relative minor. 6–7 of 7 notes shared.', body:'Soft cool-down, long blends are fine. (→ One step down the circle of fifths, or major → relative minor. 6–7 of 7 notes shared.)' },
+    dropLv2:  { cat:'Drop Lv 2', color:'#4d8aff', lead:'Keep the overlap short. A darker change of colour.', more:'Key moves down a minor third. 4 of 7 notes shared.', body:'Keep the overlap short. A darker change of colour. (→ Key moves down a minor third. 4 of 7 notes shared.)' },
+    dropLv3:  { cat:'Drop Lv 3', color:'#2040f0', lead:'Mix fast. A clear step down that signals a wind-down.', more:'Down a whole tone, 5 of 7 notes shared. In brackets: down a semitone, only 2 of 7 shared.', body:'Mix fast. A clear step down that signals a wind-down. (→ Down a whole tone, 5 of 7 notes shared. In brackets: down a semitone, only 2 of 7 shared.)' },
   };
+
+  // Tipp-Text: Handlung voll, Begründung in Klammern dezent
+  function fillTipBody(el, t) {
+    el.textContent = t.lead || t.body;
+    if (t.more) {
+      const m = document.createElement('span');
+      m.className = 'tip-more';
+      m.textContent = ' (→\u00a0' + t.more + ')';
+      el.appendChild(m);
+    }
+  }
 
   // Lazy tip helpers — #cwTip lives after this <script> tag in the DOM
   function showTip(state, x, y) {
@@ -1520,8 +1534,8 @@ window.CW_PRO = {
     const bodyEl = document.getElementById('cwTipBody');
     catEl.textContent  = t.cat;
     catEl.style.color  = t.color;
-    bodyEl.textContent = t.body;
-    const pad = 12, tw = 242, th = 86;
+    fillTipBody(bodyEl, t);
+    const pad = 12, tw = el.offsetWidth || 242, th = el.offsetHeight || 110;
     let lx = x + 14, ly = y + 18;
     if (lx + tw > window.innerWidth  - pad) lx = x - tw - 10;
     if (ly + th > window.innerHeight - pad) ly = y - th - 10;
@@ -1550,7 +1564,7 @@ window.CW_PRO = {
     const catEl = document.getElementById('cwTipCat');
     catEl.textContent = t.cat;
     catEl.style.color = t.color;
-    document.getElementById('cwTipBody').textContent = t.body;
+    fillTipBody(document.getElementById('cwTipBody'), t);
     el.style.left = ''; el.style.top = '';
     el.classList.add('tip-touch', 'tip-visible');
     clearTimeout(tipTouchTimer);
@@ -2795,7 +2809,7 @@ window.CW_PRO = {
     else if (!qmB) result = `<div class="qm-hint">Now pick the <strong>second key</strong> to check the&nbsp;match.</div>`;
     else result = `<div class="qm-verdict" style="--vc:${meta.color}">
         <div class="qm-verdict-name">${cat ? QM_ICON[cat] : '✕'} ${meta.cat}</div>
-        <div class="qm-verdict-body">${meta.body}</div></div>
+        <div class="qm-verdict-body">${meta.lead ? `${meta.lead}<span class="tip-more"> (→&nbsp;${meta.more})</span>` : meta.body}</div></div>
       <div class="qm-note">${qmA} stays locked — pick any other key to keep comparing, or tap ${qmA} / Reset to clear.</div>`;
 
     panel.innerHTML = `
@@ -4020,46 +4034,47 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
     <p>The result: <strong class="gold-em">up to 8× more intentional transitions per key</strong> compared to a standard wheel, each with a defined energy direction.</p>
 
     <h3>Match Categories</h3>
+    <p class="info-cat-note">Each tip starts with how to mix, the reason follows in brackets. Levels rate how strongly the energy change is felt, not how far apart the keys are.</p>
     <div class="info-cat-list">
       <div class="info-cat-row" style="--cc:#00e87d">
         <div class="info-cat-dot" style="background:#00e87d;color:#00e87d"></div>
         <span class="info-cat-name">Perfect Match</span>
-        <span class="info-cat-desc">Same harmonic centre, opposite mode (major ↔ minor). The smoothest possible transition — virtually no tonal shift, just a change in emotional colour.</span>
+        <span class="info-cat-desc">Blend freely, long overlaps work. <span class="info-cat-more">(→&nbsp;Same key or its diagonal neighbour. 6–7 of 7 notes shared.)</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#d040b8">
         <div class="info-cat-dot" style="background:#d040b8;color:#d040b8"></div>
         <span class="info-cat-name">Mood Change</span>
-        <span class="info-cat-desc">A specific jump that preserves harmonic compatibility while introducing a distinctly different emotional character — great for section breaks.</span>
+        <span class="info-cat-desc">Short, clean transition. Changes the emotion, not the energy. <span class="info-cat-more">(→&nbsp;Same root, minor ↔ major. 4 of 7 notes shared.)</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#ffd060">
         <div class="info-cat-dot" style="background:#ffd060;color:#ffd060"></div>
         <span class="info-cat-name">Boost Lv 1</span>
-        <span class="info-cat-desc">One step up the circle of fifths. A mild, natural energy lift — the most common DJ technique for building momentum.</span>
+        <span class="info-cat-desc">Gentle lift, long blends are fine. <span class="info-cat-more">(→&nbsp;One step up the circle of fifths, or minor → relative major. 6–7 of 7 notes shared.)</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#88c4ff">
         <div class="info-cat-dot" style="background:#88c4ff;color:#88c4ff"></div>
         <span class="info-cat-name">Drop Lv 1</span>
-        <span class="info-cat-desc">One step down the circle. A gentle release of tension — works well after a peak or to ease into a deeper groove.</span>
+        <span class="info-cat-desc">Soft cool-down, long blends are fine. <span class="info-cat-more">(→&nbsp;One step down the circle of fifths, or major → relative minor. 6–7 of 7 notes shared.)</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#ff9400">
         <div class="info-cat-dot" style="background:#ff9400;color:#ff9400"></div>
         <span class="info-cat-name">Boost Lv 2</span>
-        <span class="info-cat-desc">A moderate upward energy shift. Still harmonically compatible, but with a noticeable increase in brightness and drive. <span class="needs-pro">Requires Pro</span></span>
+        <span class="info-cat-desc">Keep the overlap short, ideally over drums or a break. A change of colour more than a push. <span class="info-cat-more">(→&nbsp;Key moves up a minor third. 4 of 7 notes shared.)</span> <span class="needs-pro">Requires Pro</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#4d8aff">
         <div class="info-cat-dot" style="background:#4d8aff;color:#4d8aff"></div>
         <span class="info-cat-name">Drop Lv 2</span>
-        <span class="info-cat-desc">A moderate downward shift. Noticeably cooler and more relaxed — use to signal a new phase in your set. <span class="needs-pro">Requires Pro</span></span>
+        <span class="info-cat-desc">Keep the overlap short. A darker change of colour. <span class="info-cat-more">(→&nbsp;Key moves down a minor third. 4 of 7 notes shared.)</span> <span class="needs-pro">Requires Pro</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#ff4000">
         <div class="info-cat-dot" style="background:#ff4000;color:#ff4000"></div>
         <span class="info-cat-name">Boost Lv 3</span>
-        <span class="info-cat-desc">Maximum energy boost. A bold, dramatic leap upward — creates tension and anticipation. Use sparingly for climactic moments. <span class="needs-pro">Requires Pro</span></span>
+        <span class="info-cat-desc">Mix fast. The classic key-change lift. <span class="info-cat-more">(→&nbsp;Up a whole tone, 5 of 7 notes shared. In brackets: up a semitone, only 2 of 7 shared, the strongest jolt.)</span> <span class="needs-pro">Requires Pro</span></span>
       </div>
       <div class="info-cat-row" style="--cc:#1030dc">
         <div class="info-cat-dot" style="background:#1030dc;color:#1030dc"></div>
         <span class="info-cat-name">Drop Lv 3</span>
-        <span class="info-cat-desc">Maximum energy drop. A powerful comedown — ideal for closing a peak, introducing a break, or pivoting to a completely different vibe. <span class="needs-pro">Requires Pro</span></span>
+        <span class="info-cat-desc">Mix fast. A clear step down that signals a wind-down. <span class="info-cat-more">(→&nbsp;Down a whole tone, 5 of 7 notes shared. In brackets: down a semitone, only 2 of 7 shared.)</span> <span class="needs-pro">Requires Pro</span></span>
       </div>
     </div>
     <p class="info-ears"><strong>Your ears decide.</strong> The categories follow music theory: they show which keys fit and what each move does harmonically. But every track brings its own energy, from groove and sound to arrangement and vocals. A harmonic boost points the way, it doesn't guarantee a great mix. Camelot Wheel doesn't replace your ears. It's your guide, and it shows you far more options than the classic wheel.</p>
