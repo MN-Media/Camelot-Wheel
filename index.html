@@ -876,7 +876,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '32';
+const CW_BUILD = '33';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -4031,7 +4031,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
 
     <h3>The Camelot wheel, extended</h3>
     <p>Traditional harmonic mixing only answers "will these keys clash?" This wheel answers "where does this take the crowd?" Boost moves raise perceived energy and tension. Drop moves lower it. Each level quantifies how dramatic the shift is — so you can plan a slow burn build, a peak-time push, or a smooth comedown with precision.</p>
-    <p>The result: <strong class="gold-em">up to 8× more intentional transitions per key</strong> compared to a standard wheel, each with a defined energy direction.</p>
+    <p>The result: <strong class="gold-em">eleven ways out of every key instead of three</strong>, almost four times as many as a standard wheel, each with a defined energy direction.</p>
 
     <h3>Match Categories</h3>
     <p class="info-cat-note">Each tip starts with how to mix, the reason follows in brackets. Levels rate how strongly the energy change is felt, not how far apart the keys are.</p>
