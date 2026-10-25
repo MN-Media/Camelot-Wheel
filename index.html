@@ -875,7 +875,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '30';
+const CW_BUILD = '31';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -923,9 +923,171 @@ window.CW_PRO = {
 (function () {
   var mq = matchMedia('(pointer: coarse) and (max-width: 600px), (pointer: coarse) and (max-height: 500px)');
 
-  /* Startbildschirm (24.10.2026): nur Handy-App, einmal pro App-Start (Antippen überspringt, ?nosplash schaltet ab) */
+  /* Install-Screen (25.10.2026): vor dem Startbildschirm, nur im Browser – nie in der installierten App,
+     nie im iframe (Website). Erkennt Gerät/Browser und zeigt den passenden Weg zur App.
+     Handy/Tablet: jeder neue Start, bis installiert oder „Don't show this again“.
+     Desktop: einmal. Test: ?install=ios|ios-other|inapp|android|desk|mac (erzwingt), ?noinstall (aus). */
+  function cwInstallGate(next) {
+    var q = location.search, ua = navigator.userAgent, b = document.body;
+    var standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+    var force = (q.match(/[?&]install=([a-z-]+)/) || [])[1];
+    if (!force && (standalone || window.top !== window.self || /[?&](noinstall|nosplash)\b/.test(q))) return next();
+    var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var android = /Android/.test(ua);
+    var inapp = /Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|Snapchat|LinkedInApp|Line\/|Twitter|; wv\)/.test(ua);
+    var ff = /Firefox|FxiOS/.test(ua), chromium = /Chrome\/|Edg\//.test(ua) && !/OPR\//.test(ua);
+    var mode = force ||
+      (inapp ? 'inapp' : ios ? (/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua) ? 'ios-other' : 'ios') : android ? 'android' :
+       (!ff && chromium) ? 'desk' : (/Macintosh/.test(ua) && /Version\/(1[7-9]|[2-9]\d)/.test(ua) && /Safari/.test(ua)) ? 'mac' : null);
+    if (!mode) return next();
+    var phone = mode !== 'desk' && mode !== 'mac';
+    try {
+      if (!force) {
+        if (localStorage.getItem('cw.install') === 'never') return next();
+        if (phone ? sessionStorage.getItem('cw.install.seen') : localStorage.getItem('cw.install.desk')) return next();
+      }
+    } catch (e) {}
+
+    var light = b.classList.contains('light-mode');
+    var css = document.createElement('style');
+    css.textContent =
+      '#cwGate{--g-bg:#000;--g-ink:#fff;--g-mu:#a3a3a3;--g-line:#2c2c2c;--g-acc:#a7ff9c;--g-btn:#a7ff9c;--g-btn-ink:#000;--g-sf:#121212;' +
+        'position:fixed;inset:0;z-index:2147483001;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--g-bg);color:var(--g-ink);' +
+        'font:400 1rem/1.5 "Work Sans",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;transition:opacity .42s cubic-bezier(.23,1,.32,1),transform .42s cubic-bezier(.23,1,.32,1)}' +
+      '#cwGate.g-light{--g-bg:#fff;--g-ink:#000;--g-mu:#4d4d4d;--g-line:#cfcfcf;--g-acc:#000;--g-btn:#000;--g-btn-ink:#fff;--g-sf:#f2f2f2}' +
+      '#cwGate *{box-sizing:border-box}#cwGate ::selection{background:#a7ff9c;color:#000}' +
+      '#cwGate .g-wrap{min-height:100%;display:flex;flex-direction:column;gap:clamp(18px,3.4vh,30px);max-width:30rem;margin:0 auto;' +
+        'padding:max(20px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left))}' +
+      '#cwGate.g-desk .g-wrap{justify-content:center}' +
+      '#cwGate .g-top{display:flex;align-items:center;gap:10px;font-weight:600;font-size:.9rem;letter-spacing:-.01em}' +
+      '#cwGate .g-top svg{width:15px;height:17px}#cwGate .g-top span{color:var(--g-mu);font-weight:400;margin-left:auto;font-size:.8rem}' +
+      '#cwGate .g-icon{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:clamp(4px,3vh,28px)}' +
+      '#cwGate .g-tile{width:clamp(60px,17vw,76px);aspect-ratio:1;border-radius:23%;overflow:hidden;box-shadow:0 0 0 1px var(--g-line)}' +
+      '#cwGate .g-tile img{display:block;width:100%;height:100%}' +
+      '#cwGate .g-tile-l{font-size:.72rem;font-weight:600;letter-spacing:.01em;color:var(--g-mu);padding-left:2px}' +
+      '#cwGate h2{margin:0;font:400 clamp(2.5rem,10.5vw,3.6rem)/.9 Anton,Impact,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:0;text-wrap:balance}' +
+      '#cwGate .g-lead{margin:-6px 0 0;font-size:1.02rem;line-height:1.45;max-width:34ch}' +
+      '#cwGate .g-steps{list-style:none;margin:0;padding:0;display:grid;gap:2px;background:var(--g-line);border-top:2px solid var(--g-ink)}' +
+      '#cwGate .g-steps li{display:grid;grid-template-columns:2.1rem 1fr;align-items:baseline;gap:6px;padding:13px 0 13px 2px;background:var(--g-bg)}' +
+      '#cwGate .g-steps b{font:400 1.45rem/1 Anton,Impact,sans-serif;color:var(--g-acc)}' +
+      '#cwGate .g-steps strong{font-weight:600}' +
+      '#cwGate .g-steps .g-ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin:0 .15em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
+      '#cwGate .g-note{margin:0;font-size:.84rem;color:var(--g-mu)}' +
+      '#cwGate .g-act{margin-top:auto;display:grid;gap:10px;padding-top:6px}' +
+      '#cwGate.g-desk .g-act{margin-top:6px}' +
+      '@media (max-height:760px){#cwGate .g-wrap{gap:14px}#cwGate .g-icon{margin-top:0}#cwGate .g-tile{width:52px}#cwGate .g-tile-l{display:none}' +
+        '#cwGate h2{font-size:clamp(2.1rem,9vw,2.7rem)}#cwGate .g-lead{font-size:.95rem;margin-top:-2px}#cwGate .g-steps li{padding:9px 0 9px 2px}#cwGate button{min-height:50px}}' +
+      '#cwGate button{font:600 1rem/1 "Work Sans",system-ui,sans-serif;min-height:54px;border:0;border-radius:0;cursor:pointer;-webkit-tap-highlight-color:transparent;' +
+        'transition:transform .16s cubic-bezier(.23,1,.32,1),background-color .18s ease,color .18s ease}' +
+      '#cwGate button:active{transform:scale(.97)}' +
+      '#cwGate button:focus-visible,#cwGate input:focus-visible+span{outline:3px solid var(--g-acc);outline-offset:2px}' +
+      '#cwGate .g-install{background:var(--g-btn);color:var(--g-btn-ink)}' +
+      '#cwGate .g-cont{background:transparent;color:var(--g-ink);box-shadow:inset 0 0 0 2px var(--g-ink)}' +
+      '@media (hover:hover){#cwGate .g-cont:hover{background:var(--g-ink);color:var(--g-bg)}#cwGate .g-install:hover{background:var(--g-ink);color:var(--g-bg)}}' +
+      '#cwGate .g-never{display:flex;align-items:center;gap:10px;font-size:.84rem;color:var(--g-mu);cursor:pointer;justify-self:start;padding:6px 0;min-height:44px}' +
+      '#cwGate .g-never input{position:absolute;opacity:0;width:1px;height:1px}' +
+      '#cwGate .g-never span{width:20px;height:20px;flex:none;box-shadow:inset 0 0 0 2px var(--g-mu);display:grid;place-items:center}' +
+      '#cwGate .g-never input:checked+span{background:var(--g-acc);box-shadow:none}' +
+      '#cwGate .g-never input:checked+span::after{content:"";width:9px;height:5px;border:solid var(--g-bg);border-width:0 0 2px 2px;transform:translateY(-1px) rotate(-45deg)}' +
+      '#cwGate [data-in]{opacity:0;transform:translate3d(0,14px,0)}' +
+      '#cwGate.g-go [data-in]{opacity:1;transform:none;transition:opacity .42s cubic-bezier(.23,1,.32,1),transform .52s cubic-bezier(.23,1,.32,1);transition-delay:calc(var(--d,0) * 60ms)}' +
+      '#cwGate.g-go .g-tile{animation:g-land .7s cubic-bezier(.34,1.56,.64,1) both}' +
+      '@keyframes g-land{from{transform:scale(.6)}to{transform:none}}' +
+      '#cwGate.g-out{opacity:0;transform:scale(.985);pointer-events:none}' +
+      '@media (prefers-reduced-motion:reduce){#cwGate *{animation:none!important;transition:none!important}#cwGate [data-in]{opacity:1;transform:none}}';
+    document.head.appendChild(css);
+
+    var share = '<svg class="g-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9H6v12h12V9h-2"/><path d="M12 3v12M8 7l4-4 4 4"/></svg>';
+    var dots = '<svg class="g-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r=".6"/><circle cx="12" cy="12" r=".6"/><circle cx="12" cy="19" r=".6"/></svg>';
+    var instIc = '<svg class="g-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M8 21h8M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5"/></svg>';
+    var plus = '<svg class="g-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
+    var T = {
+      ios:      { h: 'Put it on your home screen.', steps: ['Tap ' + share + ' <strong>Share</strong> in Safari. Don\'t see it? Tap <strong>···</strong> first.', 'Choose ' + plus + ' <strong>Add to Home Screen</strong>. Scroll down if you don\'t see it.', 'Tap <strong>Add</strong>, then open the wheel from your home screen.'] },
+      'ios-other': { h: 'Put it on your home screen.', steps: ['Tap ' + share + ' <strong>Share</strong> next to the address bar.', 'Choose ' + plus + ' <strong>Add to Home Screen</strong>.', 'Tap <strong>Add</strong>, then open the wheel from your home screen.'] },
+      inapp:    { h: 'Open it in your browser first.', note: 'Apps like Instagram or TikTok open links in their own window. From there, nothing can be installed.', steps: ['Tap the menu ' + dots + ' at the top of this window.', 'Choose <strong>Open in Safari</strong> or <strong>Open in browser</strong>.', 'Then add the wheel to your home screen from there.'] },
+      android:  { h: 'Install it as an app.', steps: ['Tap the menu ' + dots + ' in your browser.', 'Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.', 'Open the wheel from your home screen.'] },
+      desk:     { h: 'Install the wheel.', steps: ['Click the <strong>install icon</strong> ' + instIc + ' at the right end of the address bar.', 'Confirm with <strong>Install</strong>. The wheel opens in its own window.'] },
+      mac:      { h: 'Add it to your Dock.', steps: ['In the menu bar, choose <strong>File</strong>.', 'Click <strong>Add to Dock</strong>, then <strong>Add</strong>.', 'Open the wheel from your Dock. It runs in its own window.'] }
+    }[mode] || null;
+    if (!T) return next();
+    var lead = phone
+      ? 'Camelot Wheel works best as an app: full screen, its own icon, no browser bars. Free, no App Store, ten seconds.'
+      : 'Its own window, its own icon, no tabs in the way. Free and installed in seconds.';
+
+    var g = document.createElement('div');
+    g.id = 'cwGate';
+    g.className = (light ? 'g-light' : '') + (phone ? '' : ' g-desk');
+    g.setAttribute('role', 'dialog'); g.setAttribute('aria-modal', 'true'); g.setAttribute('aria-labelledby', 'cwGateH');
+    var steps = '';
+    for (var i = 0; i < T.steps.length; i++) steps += '<li data-in style="--d:' + (4 + i) + '"><b>' + (i + 1) + '</b><span>' + T.steps[i] + '</span></li>';
+    g.innerHTML = '<div class="g-wrap">' +
+      '<div class="g-top" data-in style="--d:0"><svg viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="12" stroke-linejoin="round"/></svg>Camelot Wheel<span>mnmedia</span></div>' +
+      '<div class="g-icon" data-in style="--d:1"><div class="g-tile"><img src="/icons/apple-touch-icon.png" alt="" width="76" height="76"></div><div class="g-tile-l">Camelot Wheel</div></div>' +
+      '<h2 id="cwGateH" data-in style="--d:2">' + T.h + '</h2>' +
+      '<p class="g-lead" data-in style="--d:3">' + (T.note || lead) + '</p>' +
+      '<ol class="g-steps">' + steps + '</ol>' +
+      '<div class="g-act" data-in style="--d:' + (5 + T.steps.length) + '">' +
+        '<button type="button" class="g-install" hidden>Install app</button>' +
+        '<button type="button" class="g-cont">Continue in browser</button>' +
+        '<p class="g-note">The browser works too. Everything is the same, just with less screen.</p>' +
+        (phone ? '<label class="g-never"><input type="checkbox"><span></span>Don\'t show this again</label>' : '') +
+      '</div></div>';
+    b.appendChild(g);
+    var cont = g.querySelector('.g-cont'), inst = g.querySelector('.g-install'), never = g.querySelector('.g-never input');
+
+    // Ein-Tipp-Installation, wo der Browser sie anbietet (Chrome, Edge, Samsung Internet)
+    function offer(e) {
+      if (!e) return;
+      inst.hidden = false;
+      inst.onclick = function () {
+        try { e.prompt(); } catch (x) { return; }
+        window.CW_INSTALL_PROMPT = null;
+        (e.userChoice || Promise.resolve({})).then(function (r) { if (r && r.outcome === 'accepted') done(); else inst.hidden = true; }, function () {});
+      };
+    }
+    if (window.CW_INSTALL_PROMPT) offer(window.CW_INSTALL_PROMPT);
+    addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.CW_INSTALL_PROMPT = e; if (document.body.contains(g)) offer(e); });
+
+    function done() {   // installiert: kurz bestätigen
+      g.querySelector('h2').textContent = 'Installed.';
+      g.querySelector('.g-lead').textContent = phone ? 'Open Camelot Wheel from your home screen. Or keep going here.' : 'Camelot Wheel now has its own window. Or keep going here.';
+      var ol = g.querySelector('.g-steps'); if (ol) ol.remove();
+      inst.hidden = true; cont.textContent = 'Continue here';
+      try { localStorage.setItem('cw.install', 'never'); } catch (x) {}
+    }
+    addEventListener('appinstalled', function () { if (document.body.contains(g)) done(); });
+
+    var closed = false;
+    function close() {
+      if (closed) return; closed = true;
+      try {
+        if (never && never.checked) localStorage.setItem('cw.install', 'never');
+        if (phone) sessionStorage.setItem('cw.install.seen', '1'); else localStorage.setItem('cw.install.desk', '1');
+      } catch (x) {}
+      removeEventListener('keydown', onKey);
+      g.classList.add('g-out');
+      setTimeout(function () { g.remove(); css.remove(); }, 440);
+      next();
+    }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    cont.addEventListener('click', close);
+    addEventListener('keydown', onKey);
+
+    function go() {
+      if (g.classList.contains('g-go')) return;
+      g.classList.add('g-go');   // kein Autofokus: Esc und Tab funktionieren, ohne Rahmen beim Öffnen
+    }
+    function ready() {   // Schriften (eingebettet) abwarten, höchstens 0,6 s
+      var f = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('40px Anton'), document.fonts.load('600 16px "Work Sans"')]) : null;
+      var cap = setTimeout(go, 600);
+      if (f) f.then(function () { clearTimeout(cap); go(); }, function () {});
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
+  }
+
+  /* Startbildschirm (24.10.2026): einmal pro App-Start (Antippen überspringt, ?nosplash schaltet ab); kommt nach dem Install-Screen */
   var CW_SPLASH_TAGLINE = 'Mix in harmony.';
-  (function () {
+  function cwStartSplash() {
     var skip = window.top !== window.self || /[?&]nosplash\b/.test(location.search);   // auch Desktop, nicht im iframe
     try { if (sessionStorage.getItem('cw.splash')) skip = true; else sessionStorage.setItem('cw.splash', '1'); } catch (e) {}
     if (skip) return;
@@ -985,7 +1147,8 @@ window.CW_PRO = {
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
     setTimeout(function () { out(true); }, 5000);   // Sicherheitsnetz
-  })();
+  }
+  cwInstallGate(cwStartSplash);
   /* iOS-Höhenfehler (23.10.2026): installierte App meldet die Höhe um die Statusleiste zu kurz */
   var standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
   /* Home-Balken-Abstand (23.10.2026): ohne viewport-fit=cover meldet iOS keinen Sicherheitsabstand,
@@ -3821,8 +3984,9 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
     if (standalone) { box.classList.add('is-installed'); box.querySelector('.ii-done').hidden = false; }
     const btn = document.getElementById('infoInstallBtn');
     let deferred = null;
-    addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; btn.hidden = false; });
-    btn.addEventListener('click', async () => { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (_) {} deferred = null; btn.hidden = true; });
+    if (window.CW_INSTALL_PROMPT) { deferred = window.CW_INSTALL_PROMPT; btn.hidden = false; }   // vom Install-Screen übernommen
+    addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; window.CW_INSTALL_PROMPT = e; btn.hidden = false; });
+    btn.addEventListener('click', async () => { if (!deferred) return; try { deferred.prompt(); await deferred.userChoice; } catch (_) {} deferred = null; window.CW_INSTALL_PROMPT = null; btn.hidden = true; });
     addEventListener('appinstalled', () => { btn.hidden = true; box.classList.add('is-installed'); box.querySelector('.ii-done').hidden = false; });
   });
 </script>
