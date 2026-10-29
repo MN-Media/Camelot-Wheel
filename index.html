@@ -869,25 +869,42 @@ var CW_IDLE_DEFAULT='code';
 /* ════════════════════════════════════════════════════════════════════
    FREE / PRO – zentrale Einstellungen (Launch-Plan, Variante B)
    Bis Pro kaufbar ist:  status 'soon'  → Knopf „Notify me“
-   Zum Verkaufsstart:    status 'live' + checkoutUrl eintragen → Knopf „Buy Pro“
-   Lizenzprüfung (Schritt D): activate() und verify() an /api/license anbinden.
+   Zum Verkaufsstart:    status 'live' (Testversion/lokal ist schon 'live', Kasse in der Stripe-Sandbox)
+   Lizenz: activate()/verify()/init() sprechen /api/license der Website an (seit 29.10.2026).
    ════════════════════════════════════════════════════════════════════ */
 // Website-Adresse: in der Testphase (Wheel läuft unter *.netlify.app) die Test-Website
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '33';
+const CW_BUILD = '34';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
   if (CW_TEST && q === '0') localStorage.removeItem('cw.pro.ticket');
 } catch (e) {}
+/* Lizenz-Schnittstelle (29.10.2026): Website-Funktionen /api/checkout und /api/license.
+   Live: www.mnmedia.app. Testversion/lokal: Sandbox-Vorschau der Website, umschaltbar mit ?api=<Adresse>
+   (kommt auch aus dem Aktivierungs-Link der Test-Mail). */
+const CW_API = (() => {
+  const LIVE = 'https://www.mnmedia.app';
+  if (!CW_TEST) return LIVE;
+  const ok = u => { try { const h = new URL(u).hostname; return /^https:/.test(u) && (h.endsWith('.netlify.app') || h.endsWith('mnmedia.app')); } catch (e) { return false; } };
+  try {
+    const q = new URLSearchParams(location.search).get('api');
+    if (q && ok(q)) localStorage.setItem('cw.api', q.replace(/\/$/, ''));
+    const s = localStorage.getItem('cw.api');
+    if (s && ok(s)) return s;
+  } catch (e) {}
+  return 'https://deploy-preview-7--mnmedia-website.netlify.app';   // Sandbox-Vorschau (PR #7)
+})();
+// Öffentlicher Schlüssel (ECDSA P-256) – prüft das Freischalt-Ticket offline. Der private Teil liegt nur bei Netlify.
+const CW_PUBKEY = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEpn/m6a3a2IS7Tovnyonskf1n+VxVVzG6RSfFE74/ufOz4IBGGn9KMhj05TsmfPF/YXxAgWf7KJYtIMk+dFXEDw==';
 window.CW_PRO = {
   test:        CW_TEST,
-  status:      'soon',                                         // 'soon' | 'live'
+  status:      CW_TEST ? 'live' : 'soon',                      // 'soon' | 'live' – zum Verkaufsstart live: 'live'
   price:       '€4.99',                                        // regulärer Preis
-  // Startpreis: 14 Tage ab Verkaufsstart. Zum Start launchUntil = letzter Tag (JJJJ-MM-TT) eintragen;
-  // danach schaltet die App von selbst auf den regulären Preis (Rabattcode bei Lemon Squeezy mit gleichem Enddatum).
+  // Startpreis: 14 Tage ab Verkaufsstart. Zum Start launchUntil = letzter Tag (JJJJ-MM-TT) eintragen,
+  // gleiches Datum wie launchUntil in netlify/lib/pro-config.mjs der Website (die Kasse rechnet danach ab).
   launchPrice: '€3.99',
   launchDays:  14,
   launchUntil: '',
@@ -897,24 +914,86 @@ window.CW_PRO = {
     return t <= this.launchUntil;
   },
   nowPrice() { return this.launchActive() ? this.launchPrice : this.price; },
-  checkoutUrl: '',                                             // Lemon-Squeezy-Kauflink (Schritt G)
+  checkoutUrl: CW_API + '/api/checkout?from=app',
   notifyUrl:   CW_SITE + '/camelot-wheel#pro-notify', // Formular „Benachrichtige mich“
   helpUrl:     CW_SITE + '/pro',
   // Pro-Funktionen: Kategorien Lv2/Lv3, Quick Check, Dual-Ansicht
   cats: ['boostLv2','boostLv3','dropLv2','dropLv3'],
+  CHECK_EVERY: 30 * 86400e3,                                   // online nachfragen (Erstattung → gesperrt)
 
+  // Zufällige Gerätekennung (pro Browser-Speicher; Safari und Home-Bildschirm-App zählen getrennt)
+  device() {
+    let d = null;
+    try { d = localStorage.getItem('cw.device'); } catch (e) {}
+    if (!d || !/^[A-Za-z0-9_-]{8,64}$/.test(d)) {
+      const b = new Uint8Array(16); crypto.getRandomValues(b);
+      d = 'd' + Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+      try { localStorage.setItem('cw.device', d); } catch (e) {}
+    }
+    return d;
+  },
+  _sig: null,                                                  // Signatur geprüft: null = noch nicht, true/false
+  _payload(ticket) {
+    try {
+      const p = ticket.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(atob(p + '='.repeat((4 - p.length % 4) % 4)));
+    } catch (e) { return null; }
+  },
   isPro() {
     try { return this.verify(localStorage.getItem('cw.pro.ticket')); } catch (e) { return false; }
   },
-  // Schritt D: signiertes Pro-Ticket offline prüfen (öffentlicher Schlüssel).
-  // Bis dahin gibt es nur einen Test-Schalter auf dem eigenen Rechner.
+  // Schnelle Prüfung (synchron): Ticket gehört zu Pro, zu diesem Gerät und – live – nicht zur Sandbox.
+  // Die Signatur prüft verifySig() beim Start (WebCrypto ist asynchron) und nimmt Pro bei Fälschung wieder weg.
   verify(ticket) {
     if (!ticket) return false;
-    return CW_TEST && ticket === 'dev';   // Testschalter nur auf Testversion/lokal, Live ignoriert ihn
+    if (ticket === 'dev') return CW_TEST;                      // Testschalter nur auf Testversion/lokal
+    if (this._sig === false) return false;
+    const p = this._payload(ticket);
+    return !!p && p.v === 1 && p.p === 'cw-pro' && p.d === this.device() && (p.m === 'live' || CW_TEST);
   },
-  // Schritt D: Schlüssel an /api/license schicken, Ticket speichern.
+  async verifySig(ticket) {
+    const [payload, sig] = String(ticket || '').split('.');
+    if (!payload || !sig || !(window.crypto && crypto.subtle)) return !!(payload && sig);   // ohne WebCrypto (alte Browser): nur Form prüfen
+    const b64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
+    try {
+      const key = await crypto.subtle.importKey('spki', b64(CW_PUBKEY), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+      return await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, b64(sig), new TextEncoder().encode(payload));
+    } catch (e) { return false; }
+  },
+  async api(body) {
+    let res;
+    try {
+      res = await fetch(CW_API + '/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    } catch (e) { throw Object.assign(new Error('No connection. Activation needs the internet once.'), { code: 'offline' }); }
+    let j = {}; try { j = await res.json(); } catch (e) {}
+    if (!j.ok) throw Object.assign(new Error(j.error || 'That didn’t work. Please try again in a minute.'), { code: j.code, canReset: j.canReset });
+    return j;
+  },
+  // Schlüssel an /api/license schicken, Ticket prüfen und speichern
   async activate(key) {
-    throw new Error('License activation opens with the Pro launch.');
+    const j = await this.api({ action: 'activate', key, device: this.device() });
+    if (!(await this.verifySig(j.ticket))) throw new Error('Activation could not be verified. Please try again.');
+    localStorage.setItem('cw.pro.ticket', j.ticket);
+    localStorage.setItem('cw.pro.checked', String(Date.now()));
+    this._sig = true;
+  },
+  async resetDevices(key) { await this.api({ action: 'reset', key }); },
+  // Beim Start: Signatur prüfen; gelegentlich online nachfragen, ob die Lizenz noch gilt. Ruft onChange bei Änderung.
+  async init(onChange) {
+    let t = null; try { t = localStorage.getItem('cw.pro.ticket'); } catch (e) {}
+    if (!t || t === 'dev') return;
+    const ok = await this.verifySig(t);
+    this._sig = ok;
+    if (!ok) { try { localStorage.removeItem('cw.pro.ticket'); } catch (e) {} onChange && onChange(); return; }
+    let last = 0; try { last = Number(localStorage.getItem('cw.pro.checked')) || 0; } catch (e) {}
+    if (Date.now() - last < this.CHECK_EVERY || navigator.onLine === false) return;
+    try {
+      const res = await fetch(CW_API + '/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'check', ticket: t }) });
+      const j = await res.json();
+      if (!j.ok) return;                                       // Serverfehler: nichts ändern, später erneut
+      localStorage.setItem('cw.pro.checked', String(Date.now()));
+      if (j.active === false) { localStorage.removeItem('cw.pro.ticket'); onChange && onChange(); }
+    } catch (e) {}                                             // offline: Pro bleibt
   }
 };
 </script>
@@ -3179,16 +3258,55 @@ window.CW_PRO = {
   }
   async function activateProKey(ev) {
     ev.preventDefault();
-    const input = document.querySelector('#proSheet .pro-key input');
+    const form = document.querySelector('#proSheet .pro-key');
+    const input = form.querySelector('input'), btn = form.querySelector('button[type=submit]');
     const msg = document.querySelector('#proSheet .pro-msg');
     const key = input.value.trim();
+    document.querySelector('#proSheet .pro-reset').hidden = true;
     if (!key) { msg.textContent = 'Paste the license key from your purchase email.'; return; }
+    btn.disabled = true; msg.textContent = 'Activating…';
     try {
       await window.CW_PRO.activate(key);
       msg.textContent = 'Pro is active on this device.';
       applyProState();
-      setTimeout(closeProSheet, 900);
-    } catch (e) { msg.textContent = e.message || 'That key did not work. Check it and try again.'; }
+      setTimeout(closeProSheet, 1100);
+    } catch (e) {
+      msg.textContent = e.message || 'That key did not work. Check it and try again.';
+      // Alle Geräte belegt → Selbsthilfe: alle abmelden (höchstens einmal im Monat), dann hier neu aktivieren
+      if (e.code === 'limit') {
+        msg.textContent = e.canReset ? 'This key is already active on 3 devices. Reset signs out all devices, then activate here again.'
+                                     : 'This key is already active on 3 devices. Write to info@mnmedia.app and we’ll sort it out.';
+        document.querySelector('#proSheet .pro-reset').hidden = !e.canReset;
+      }
+    } finally { btn.disabled = false; }
+  }
+  async function resetProDevices() {
+    const key = document.querySelector('#proSheet .pro-key input').value.trim();
+    const msg = document.querySelector('#proSheet .pro-msg'), rb = document.querySelector('#proSheet .pro-reset');
+    rb.disabled = true; msg.textContent = 'Resetting devices…';
+    try {
+      await window.CW_PRO.resetDevices(key);
+      rb.hidden = true;
+      await window.CW_PRO.activate(key);
+      msg.textContent = 'Done. Pro is active on this device. Activate your other devices again.';
+      applyProState();
+    } catch (e) { msg.textContent = e.message; }
+    finally { rb.disabled = false; }
+  }
+  // Aktivierungs-Link aus Mail/Danke-Seite (?key=…): Pro-Fenster mit vorausgefülltem Schlüssel öffnen
+  function proKeyFromUrl() {
+    let key = null;
+    try {
+      const u = new URL(location.href); key = u.searchParams.get('key');
+      if (!key) return;
+      u.searchParams.delete('key'); u.searchParams.delete('api');
+      history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+    } catch (e) { return; }
+    if (isPro()) return;
+    const go = () => { openProSheet('info'); showProKey(); document.querySelector('#proSheet .pro-key input').value = key; };
+    // erst nach Install-Screen und Startbildschirm öffnen
+    const wait = () => (document.getElementById('cwGate') || document.getElementById('cwSplash')) ? setTimeout(wait, 250) : setTimeout(go, 300);
+    setTimeout(wait, 300);
   }
   // Oberfläche an Free/Pro anpassen (Schlösser, gesperrte Kategorien)
   function applyProState() {
@@ -3209,6 +3327,8 @@ window.CW_PRO = {
     updateAnimTargets(); startRaf(); draw(); updatePanel(); updateQuick(); updateCatDropdown();
   }
   applyProState();
+  window.CW_PRO.init(applyProState);   // Signatur prüfen, gelegentlich online nachfragen
+  proKeyFromUrl();
 
   // Puls wieder anwerfen, sobald das Rad wieder sichtbar ist (Ansichtswechsel, Drehen, App zurück im Vordergrund)
   const pulseResume = () => { startRaf(); if (currentMode === 'dual') wheel2.kick(); };
@@ -3217,7 +3337,7 @@ window.CW_PRO = {
 
   window.__cw = { qmPrev: m => { qmPrevMode = m; },   // Quick-Ausstieg direkt (24.10.2026): Ziel statt alter Ansicht
     buildCatDropdown, setModeSoft, select, toggle, toggleCat, toggleTips, qmSwap, qmReset, toggleCatL, toggleTipsDual, toggleCatR: wheel2.toggleCat,
-                  openProSheet, closeProSheet, showProKey, activateProKey };
+                  openProSheet, closeProSheet, showProKey, activateProKey, resetProDevices };
 
   // ── Tip delegation: Quick-Select grid & Panel chips ───────────────────
   // Single document-level mousemove — canvas has its own handler above.
@@ -3510,6 +3630,9 @@ window.CW_PRO = {
   .pro-key input { flex: 1; min-width: 0; height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; font-size: .88rem; }
   .pro-key button { height: 42px; padding: 0 16px; border-radius: 12px; border: 0; background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
   .pro-msg { margin-top: 10px; font-size: .82rem; text-align: center; color: var(--muted); min-height: 1.2em; }
+  .pro-reset { display: block; margin: 8px auto 0; height: 38px; padding: 0 16px; border: 1px solid var(--border); border-radius: 12px; background: none; color: var(--text); font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer; }
+  .pro-reset[hidden] { display: none; }
+  body.look-ind:not(#_) .pro-reset { border-radius: 0; border: 3px solid var(--frame); }
 </style>
 
 
@@ -3948,6 +4071,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
       <button type="submit">Activate</button>
     </form>
     <p class="pro-msg" role="status" aria-live="polite"></p>
+    <button type="button" class="pro-reset" hidden onclick="__cw.resetProDevices()">Reset devices</button>
   </div>
 </div>
 
