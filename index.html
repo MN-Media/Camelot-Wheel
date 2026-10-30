@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  ┌───────────────────────────────────────────────────────────────┐
+  │  Hey, you're reading the source. Respect.                     │
+  │                                                               │
+  │  Pro is unlocked by a signed license. Editing this file       │
+  │  only fools your own browser, and the wheel still checks      │
+  │  in with us every few days.                                   │
+  │                                                               │
+  │  Pro costs less than a drink at the bar and pays for the      │
+  │  next update. Questions, ideas, more devices:                 │
+  │  info@mnmedia.app                                             │
+  │                                         Michael, mnmedia.app  │
+  └───────────────────────────────────────────────────────────────┘
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -874,13 +888,52 @@ var CW_IDLE_DEFAULT='code';
    ════════════════════════════════════════════════════════════════════ */
 // Website-Adresse: in der Testphase (Wheel läuft unter *.netlify.app) die Test-Website
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
-/* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
-const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '38';
+/* Testmodus (seit 31.10.2026 nur für Tester): Pro-Schalter, Sandbox-Kasse und Sandbox-Lizenzen gibt es nur auf der
+   Testversion (test--…netlify.app) oder lokal (localhost) UND auf einem Gerät, das einmal mit ?tester=<Code> markiert wurde.
+   Im Quelltext steht nur der SHA-256 des Codes. Gespeicherte Dateien (file:) sind nie Testumgebung. Ohne Code verhält
+   sich die Testversion wie die echte App (Live-Lizenzen, echte Kasse). */
+function cwSha256(ascii) {   // kompaktes SHA-256 (synchron, nur ASCII), damit der Testmodus beim Start feststeht
+  const rr = (v, n) => (v >>> n) | (v << (32 - n));
+  const P = Math.pow, MW = P(2, 32), W = [], bits = ascii.length * 8, H = [], K = [], comp = {};
+  for (let c = 2, n = 0; n < 64; c++) if (!comp[c]) { for (let i = 0; i < 313; i += c) comp[i] = c; H[n] = (P(c, .5) * MW) | 0; K[n++] = (P(c, 1 / 3) * MW) | 0; }
+  ascii += '\x80'; while (ascii.length % 64 - 56) ascii += '\x00';
+  for (let i = 0; i < ascii.length; i++) { const j = ascii.charCodeAt(i); if (j >> 8) return ''; W[i >> 2] |= j << ((3 - i) % 4) * 8; }
+  W[W.length] = (bits / MW) | 0; W[W.length] = bits;
+  let h = H.slice(0, 8);
+  for (let j = 0; j < W.length;) {
+    const w = W.slice(j, j += 16), old = h; h = h.slice(0, 8);
+    for (let i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2], a = h[0], e = h[4];
+      const t1 = h[7] + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & h[5]) ^ (~e & h[6])) + K[i] + (w[i] = i < 16 ? w[i] : (w[i - 16] + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))) | 0);
+      const t2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & h[1]) ^ (a & h[2]) ^ (h[1] & h[2]));
+      h = [(t1 + t2) | 0].concat(h); h[4] = (h[4] + t1) | 0;
+    }
+    for (let i = 0; i < 8; i++) h[i] = (h[i] + old[i]) | 0;
+  }
+  let out = ''; for (let i = 0; i < 8; i++) for (let j = 3; j + 1; j--) { const b = (h[i] >> (j * 8)) & 255; out += (b < 16 ? '0' : '') + b.toString(16); }
+  return out;
+}
+const CW_TEST_HOST = ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
+const CW_TEST = CW_TEST_HOST && (() => {
+  const HASH = '444ad7980f7de3723b1441561e3ccd89886b19f7bf1269211bedcb7b10e6306a';
+  try {
+    const q = new URLSearchParams(location.search).get('tester');
+    if (q !== null) { if (q && cwSha256(q) === HASH) localStorage.setItem('cw.tester', q); else localStorage.removeItem('cw.tester'); }
+    const c = localStorage.getItem('cw.tester');
+    return !!c && cwSha256(c) === HASH;
+  } catch (e) { return false; }
+})();
+const CW_BUILD = '39';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
   if (CW_TEST && q === '0') localStorage.removeItem('cw.pro.ticket');
+  if (!CW_TEST && q !== null) window.CW_NICE_TRY = true;      // ?pro=… in der echten App: freundlicher Hinweis statt Pro
+} catch (e) {}
+/* Für Neugierige in der Entwicklerkonsole */
+try {
+  console.log('%cKEY NAVIGATOR', 'font:400 32px Anton,Impact,sans-serif;color:#a7ff9c;background:#000;padding:6px 12px');
+  console.log('%cLooking under the hood? Nice.\n\nPro is checked with a signed license (ECDSA) and an online check every few days, so typing CW_PRO.isPro = () => true here only fools this one tab.\n\nPro costs less than a drink at the bar. Questions or ideas: info@mnmedia.app', 'font:14px/1.5 system-ui,sans-serif');
 } catch (e) {}
 /* Lizenz-Schnittstelle (29.10.2026): Website-Funktionen /api/checkout und /api/license.
    Live: www.mnmedia.app. Testversion/lokal: Sandbox-Vorschau der Website, umschaltbar mit ?api=<Adresse>
@@ -916,7 +969,10 @@ window.CW_PRO = {
   helpUrl:     CW_SITE + '/pro',
   // Pro-Funktionen: Kategorien Lv2/Lv3, Quick Check, Dual-Ansicht
   cats: ['boostLv2','boostLv3','dropLv2','dropLv3'],
-  CHECK_EVERY: 86400e3,                                        // höchstens 1× am Tag online nachfragen (Erstattung → gesperrt); offline bleibt Pro
+  // Online-Prüfung (seit 31.10.2026, Michael): Pro gilt, solange die letzte erfolgreiche Prüfung höchstens 3 Tage her ist.
+  // Danach pausiert Pro (Core + Hinweis), bis die App einmal online war. So bleibt Pro nach einer Erstattung höchstens 3 Tage.
+  CHECK_EVERY: 6 * 3600e3,                                     // online: höchstens alle 6 Std. nachfragen
+  GRACE:       3 * 86400e3,                                    // ohne erfolgreiche Prüfung: Pro höchstens 3 Tage
 
   // Zufällige Gerätekennung (pro Browser-Speicher; Safari und Home-Bildschirm-App zählen getrennt)
   device() {
@@ -937,7 +993,14 @@ window.CW_PRO = {
     } catch (e) { return null; }
   },
   isPro() {
-    try { return this.verify(localStorage.getItem('cw.pro.ticket')); } catch (e) { return false; }
+    try { const t = localStorage.getItem('cw.pro.ticket'); return this.verify(t) && (t === 'dev' || !this.stale()); } catch (e) { return false; }
+  },
+  lastCheck() { try { return Number(localStorage.getItem('cw.pro.checked')) || 0; } catch (e) { return 0; } },
+  // Letzte Prüfung zu lange her (oder Uhr zurückgestellt)
+  stale() { const d = Date.now() - this.lastCheck(); return d > this.GRACE || d < -3600e3; },
+  // Gültige Lizenz auf diesem Gerät, aber Prüfung überfällig → Pro pausiert
+  paused() {
+    try { const t = localStorage.getItem('cw.pro.ticket'); return !!t && t !== 'dev' && this.verify(t) && this.stale(); } catch (e) { return false; }
   },
   // Schnelle Prüfung (synchron): Ticket gehört zu Pro, zu diesem Gerät und – live – nicht zur Sandbox.
   // Die Signatur prüft verifySig() beim Start (WebCrypto ist asynchron) und nimmt Pro bei Fälschung wieder weg.
@@ -950,7 +1013,7 @@ window.CW_PRO = {
   },
   async verifySig(ticket) {
     const [payload, sig] = String(ticket || '').split('.');
-    if (!payload || !sig || !(window.crypto && crypto.subtle)) return !!(payload && sig);   // ohne WebCrypto (alte Browser): nur Form prüfen
+    if (!payload || !sig || !(window.crypto && crypto.subtle)) return false;   // ohne WebCrypto keine Prüfung möglich → kein Pro
     const b64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
     try {
       const key = await crypto.subtle.importKey('spki', b64(CW_PUBKEY), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
@@ -976,21 +1039,28 @@ window.CW_PRO = {
   },
   async resetDevices(key) { await this.api({ action: 'reset', key }); },
   // Beim Start: Signatur prüfen; gelegentlich online nachfragen, ob die Lizenz noch gilt. Ruft onChange bei Änderung.
-  async init(onChange) {
+  // force: sofort prüfen (Knopf „Check now“). Rückgabe: 'ok' | 'revoked' | 'offline' | 'skip'
+  async init(onChange, force) {
     let t = null; try { t = localStorage.getItem('cw.pro.ticket'); } catch (e) {}
-    if (!t || t === 'dev') return;
-    const ok = await this.verifySig(t);
-    this._sig = ok;
-    if (!ok) { try { localStorage.removeItem('cw.pro.ticket'); } catch (e) {} onChange && onChange(); return; }
-    let last = 0; try { last = Number(localStorage.getItem('cw.pro.checked')) || 0; } catch (e) {}
-    if (Date.now() - last < this.CHECK_EVERY || navigator.onLine === false) return;
+    if (!t || t === 'dev') return 'skip';
+    if (this._sig === null) {
+      const ok = await this.verifySig(t);
+      this._sig = ok;
+      if (!ok) { try { localStorage.removeItem('cw.pro.ticket'); } catch (e) {} onChange && onChange(); return 'revoked'; }
+    }
+    const due = force || this.stale() || Date.now() - this.lastCheck() >= this.CHECK_EVERY;
+    if (!due) return 'skip';
+    if (navigator.onLine === false && !force) return 'offline';
+    const before = this.isPro();
     try {
       const res = await fetch(CW_API + '/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'check', ticket: t }) });
-      const j = await res.json();
-      if (!j.ok) return;                                       // Serverfehler: nichts ändern, später erneut
+      const j = await res.json().catch(() => ({}));
+      // Antwort von unserem Server zählt als Prüfung (bei einem Serverfehler auf unserer Seite verliert niemand Pro)
       localStorage.setItem('cw.pro.checked', String(Date.now()));
-      if (j.active === false) { localStorage.removeItem('cw.pro.ticket'); onChange && onChange(); }
-    } catch (e) {}                                             // offline: Pro bleibt
+      if (j.ok && j.active === false) { localStorage.removeItem('cw.pro.ticket'); onChange && onChange(); return 'revoked'; }
+    } catch (e) { return 'offline'; }                         // keine Verbindung: Pro gilt bis 3 Tage nach der letzten Prüfung
+    if (before !== this.isPro()) onChange && onChange();
+    return 'ok';
   }
 };
 </script>
@@ -3225,7 +3295,9 @@ window.CW_PRO = {
     levels: 'Boost and drop levels 2 and 3 are part of Pro.',
     quick:  'Quick Check is part of Pro.',
     dual:   'Dual view is part of Pro.',
-    info:   'Unlock the full energy map.'
+    info:   'Unlock the full energy map.',
+    paused: 'Pro is paused. Your license checks in online every 3 days. Connect to the internet and tap Check now.',
+    nicetry:'Nice try. That switch only works on our test bench. Pro costs less than a drink at the bar.'
   };
   function openProSheet(reason) {
     const P = window.CW_PRO, el = document.getElementById('proSheet');
@@ -3242,14 +3314,32 @@ window.CW_PRO = {
     }
     el.classList.toggle('is-live', live);
     const cta = el.querySelector('.pro-cta');
-    cta.href = P.checkoutUrl;
-    cta.textContent = `Buy Pro – ${P.nowPrice()}`;
+    const paused = P.paused();
+    if (paused) el.querySelector('.pro-why').textContent = PRO_REASON.paused;
+    el.classList.toggle('is-paused', paused);
+    if (paused) {   // gültige Lizenz, Prüfung überfällig: statt Kaufen jetzt prüfen
+      cta.href = '#'; cta.removeAttribute('target'); cta.textContent = 'Check now';
+      cta.onclick = e => { e.preventDefault(); recheckPro(); };
+    } else {
+      cta.href = P.checkoutUrl; cta.target = '_blank'; cta.onclick = null;
+      cta.textContent = `Buy Pro – ${P.nowPrice()}`;
+    }
     el.querySelector('.pro-key').hidden = true;
     el.querySelector('.pro-msg').textContent = '';
     el.classList.add('open');
     setTimeout(() => cta.focus(), 30);
   }
   function closeProSheet() { document.getElementById('proSheet').classList.remove('open'); }
+  // Pro pausiert → sofort online prüfen
+  async function recheckPro() {
+    const msg = document.querySelector('#proSheet .pro-msg'), cta = document.querySelector('#proSheet .pro-cta');
+    msg.textContent = 'Checking…'; cta.setAttribute('aria-disabled', 'true');
+    const r = await window.CW_PRO.init(applyProState, true);
+    cta.removeAttribute('aria-disabled');
+    if (window.CW_PRO.isPro()) { msg.textContent = 'Pro is active again.'; applyProState(); setTimeout(closeProSheet, 1100); }
+    else if (r === 'revoked') { msg.textContent = 'This license is no longer valid (the purchase was refunded).'; openProSheet('info'); }
+    else msg.textContent = 'No connection. Connect to the internet and try again.';
+  }
   function showProKey() {
     const box = document.querySelector('#proSheet .pro-key');
     box.hidden = false; box.querySelector('input').focus();
@@ -3325,8 +3415,26 @@ window.CW_PRO = {
     updateAnimTargets(); startRaf(); draw(); updatePanel(); updateQuick(); updateCatDropdown();
   }
   applyProState();
-  window.CW_PRO.init(applyProState);   // Signatur prüfen, gelegentlich online nachfragen
+  window.CW_PRO.init(applyProState);   // Signatur prüfen, online nachfragen (alle 6 Std., spätestens nach 3 Tagen nötig)
   proKeyFromUrl();
+  // Erneut prüfen, wenn die App wieder in den Vordergrund kommt oder Internet hat (Pro wechselt nie mitten in der Nutzung)
+  const proResume = () => window.CW_PRO.init(applyProState);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') proResume(); });
+  window.addEventListener('online', proResume);
+  // Nach Install-Screen und Startbildschirm: Hinweis „Pro pausiert“ (einmal pro Sitzung) bzw. „Nice try“ bei ?pro=…
+  (function proNotice() {
+    const nice = window.CW_NICE_TRY;
+    if (nice) { try { const u = new URL(location.href); u.searchParams.delete('pro'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) {} }
+    let seen = false; try { seen = sessionStorage.getItem('cw.pro.pausedSeen') === '1'; } catch (e) {}
+    const want = nice ? 'nicetry' : (window.CW_PRO.paused() && !seen ? 'paused' : null);
+    if (!want) return;
+    const go = () => {
+      if (want === 'paused') { if (!window.CW_PRO.paused()) return; try { sessionStorage.setItem('cw.pro.pausedSeen', '1'); } catch (e) {} }
+      openProSheet(want);
+    };
+    const wait = () => (document.getElementById('cwGate') || document.getElementById('cwSplash')) ? setTimeout(wait, 250) : setTimeout(go, 400);
+    setTimeout(wait, 600);
+  })();
 
   // Puls wieder anwerfen, sobald das Rad wieder sichtbar ist (Ansichtswechsel, Drehen, App zurück im Vordergrund)
   const pulseResume = () => { startRaf(); if (currentMode === 'dual') wheel2.kick(); };
@@ -4052,7 +4160,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
       <li style="--c:#ff3800">Boost and drop levels 2 and 3: the full energy map</li>
       <li style="--c:#ffcc33">Quick Check: compare any two keys</li>
       <li style="--c:#4d8aff">Dual view: two wheels side by side</li>
-      <li style="--c:#00e87d">Up to 3 devices, works offline</li>
+      <li style="--c:#00e87d">Up to 3 devices. Works offline, checks in online every 3 days</li>
       <li style="--c:#a1a1a6">All future updates included</li>
     </ul>
     <div class="pro-price"><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€5.49</span><span>one-time · no subscription</span></div>
