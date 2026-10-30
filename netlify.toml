@@ -20,3 +20,11 @@
     Content-Security-Policy = "frame-ancestors 'self' https://mnmedia.app https://www.mnmedia.app"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy        = "strict-origin-when-cross-origin"
+
+# Umbenennung (30.10.2026): alte Adresse camelot-wheel.mnmedia.app leitet dauerhaft auf key-navigator.mnmedia.app
+# (greift nur, wenn die Anfrage über die alte Adresse kommt; beide Domains hängen am selben Netlify-Projekt)
+[[redirects]]
+  from = "https://camelot-wheel.mnmedia.app/*"
+  to = "https://key-navigator.mnmedia.app/:splat"
+  status = 301
+  force = true
