@@ -876,7 +876,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '35';
+const CW_BUILD = '36';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -919,7 +919,7 @@ window.CW_PRO = {
   helpUrl:     CW_SITE + '/pro',
   // Pro-Funktionen: Kategorien Lv2/Lv3, Quick Check, Dual-Ansicht
   cats: ['boostLv2','boostLv3','dropLv2','dropLv3'],
-  CHECK_EVERY: 30 * 86400e3,                                   // online nachfragen (Erstattung → gesperrt)
+  CHECK_EVERY: 86400e3,                                        // höchstens 1× am Tag online nachfragen (Erstattung → gesperrt); offline bleibt Pro
 
   // Zufällige Gerätekennung (pro Browser-Speicher; Safari und Home-Bildschirm-App zählen getrennt)
   device() {
