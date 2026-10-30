@@ -876,7 +876,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '34';
+const CW_BUILD = '35';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -902,12 +902,12 @@ const CW_PUBKEY = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEpn/m6a3a2IS7Tovnyonskf1n+
 window.CW_PRO = {
   test:        CW_TEST,
   status:      CW_TEST ? 'live' : 'soon',                      // 'soon' | 'live' – zum Verkaufsstart live: 'live'
-  price:       '€4.99',                                        // regulärer Preis
-  // Startpreis: 14 Tage ab Verkaufsstart. Zum Start launchUntil = letzter Tag (JJJJ-MM-TT) eintragen,
+  price:       '€5.49',                                        // regulärer Preis (seit 30.10.2026)
+  // Startpreis den ganzen November (Michael, 30.10.2026): launchUntil = letzter Tag (JJJJ-MM-TT),
   // gleiches Datum wie launchUntil in netlify/lib/pro-config.mjs der Website (die Kasse rechnet danach ab).
   launchPrice: '€3.99',
   launchDays:  14,
-  launchUntil: '',
+  launchUntil: '2026-11-30',
   launchActive() {
     if (this.status !== 'live' || !this.launchUntil) return false;
     const d = new Date(), t = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -3239,7 +3239,7 @@ window.CW_PRO = {
       try { until = new Date(P.launchUntil + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }); } catch (e) {}
       // Einführungspreis, keine Preissenkung: kein durchgestrichener Preis, sondern Hinweis auf den späteren Preis
       ln.textContent = launch ? `Launch price until ${until}, then ${P.price}.`
-        : live ? '' : `Launch price ${P.launchPrice} for the first ${P.launchDays} days, then ${P.price}.`;
+        : live ? '' : `Launch price ${P.launchPrice} until ${until}, then ${P.price}.`;
       ln.hidden = !ln.textContent;
     }
     el.classList.toggle('is-live', live);
@@ -4057,8 +4057,8 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
       <li style="--c:#00e87d">Up to 3 devices, works offline</li>
       <li style="--c:#a1a1a6">All future updates included</li>
     </ul>
-    <div class="pro-price"><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€4.99</span><span>one-time · no subscription</span></div>
-    <p class="pro-launch">Launch price €3.99 for the first 14 days, then €4.99.</p>
+    <div class="pro-price"><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€5.49</span><span>one-time · no subscription</span></div>
+    <p class="pro-launch">Launch price €3.99 until 30 November, then €5.49.</p>
     <a class="pro-cta" href="#" target="_blank" rel="noopener">Notify me when Pro launches</a>
     <p class="pro-note only-soon">Pro goes on sale soon. Leave your email and you'll hear first, in time for the launch price.</p>
     <p class="pro-note only-live">Secure checkout. 14-day money-back guarantee.</p>
