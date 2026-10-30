@@ -868,15 +868,15 @@ var CW_IDLE_DEFAULT='code';
 <script>
 /* ════════════════════════════════════════════════════════════════════
    FREE / PRO – zentrale Einstellungen (Launch-Plan, Variante B)
-   Bis Pro kaufbar ist:  status 'soon'  → Knopf „Notify me“
-   Zum Verkaufsstart:    status 'live' (Testversion/lokal ist schon 'live', Kasse in der Stripe-Sandbox)
+   Pro ist kaufbar (seit Verkaufsstart, Kasse über Stripe). Testversion/lokal kauft in der Stripe-Sandbox.
+   Die Warteliste „Notify me“ entfällt (30.10.2026: Start direkt mit Kasse).
    Lizenz: activate()/verify()/init() sprechen /api/license der Website an (seit 29.10.2026).
    ════════════════════════════════════════════════════════════════════ */
 // Website-Adresse: in der Testphase (Wheel läuft unter *.netlify.app) die Test-Website
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '36';
+const CW_BUILD = '37';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -901,21 +901,18 @@ const CW_API = (() => {
 const CW_PUBKEY = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEpn/m6a3a2IS7Tovnyonskf1n+VxVVzG6RSfFE74/ufOz4IBGGn9KMhj05TsmfPF/YXxAgWf7KJYtIMk+dFXEDw==';
 window.CW_PRO = {
   test:        CW_TEST,
-  status:      CW_TEST ? 'live' : 'soon',                      // 'soon' | 'live' – zum Verkaufsstart live: 'live'
   price:       '€5.49',                                        // regulärer Preis (seit 30.10.2026)
   // Startpreis den ganzen November (Michael, 30.10.2026): launchUntil = letzter Tag (JJJJ-MM-TT),
   // gleiches Datum wie launchUntil in netlify/lib/pro-config.mjs der Website (die Kasse rechnet danach ab).
   launchPrice: '€3.99',
-  launchDays:  14,
   launchUntil: '2026-11-30',
   launchActive() {
-    if (this.status !== 'live' || !this.launchUntil) return false;
+    if (!this.launchUntil) return false;
     const d = new Date(), t = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     return t <= this.launchUntil;
   },
   nowPrice() { return this.launchActive() ? this.launchPrice : this.price; },
   checkoutUrl: CW_API + '/api/checkout?from=app',
-  notifyUrl:   CW_SITE + '/camelot-wheel#pro-notify', // Formular „Benachrichtige mich“
   helpUrl:     CW_SITE + '/pro',
   // Pro-Funktionen: Kategorien Lv2/Lv3, Quick Check, Dual-Ansicht
   cats: ['boostLv2','boostLv3','dropLv2','dropLv3'],
@@ -3220,7 +3217,7 @@ window.CW_PRO = {
   // toggle: deselects if code is already selected, otherwise selects
   const toggle = code => quickMode ? quickPick(code) : select(code === selected ? null : code);
   // ══════════════════════════════════════════════════════════════════════
-  // PRO SHEET – erklärt Pro; „Notify me“ (status soon) bzw. „Buy“ + Schlüssel (live)
+  // PRO SHEET – erklärt Pro; „Buy Pro“ + Schlüssel eingeben
   // ══════════════════════════════════════════════════════════════════════
   const PRO_REASON = {
     levels: 'Boost and drop levels 2 and 3 are part of Pro.',
@@ -3231,21 +3228,20 @@ window.CW_PRO = {
   function openProSheet(reason) {
     const P = window.CW_PRO, el = document.getElementById('proSheet');
     el.querySelector('.pro-why').textContent = PRO_REASON[reason] || PRO_REASON.info;
-    const live = P.status === 'live' && !!P.checkoutUrl, launch = live && P.launchActive();
+    const live = true, launch = P.launchActive();
     el.querySelectorAll('[data-pro-price]').forEach(n => n.textContent = P.nowPrice());
     const ln = el.querySelector('.pro-launch');
     if (ln) {
       let until = '';
       try { until = new Date(P.launchUntil + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }); } catch (e) {}
       // Einführungspreis, keine Preissenkung: kein durchgestrichener Preis, sondern Hinweis auf den späteren Preis
-      ln.textContent = launch ? `Launch price until ${until}, then ${P.price}.`
-        : live ? '' : `Launch price ${P.launchPrice} until ${until}, then ${P.price}.`;
+      ln.textContent = launch ? `Launch price until ${until}, then ${P.price}.` : '';
       ln.hidden = !ln.textContent;
     }
     el.classList.toggle('is-live', live);
     const cta = el.querySelector('.pro-cta');
-    cta.href = live ? P.checkoutUrl : P.notifyUrl;
-    cta.textContent = live ? `Buy Pro – ${P.nowPrice()}` : 'Notify me when Pro launches';
+    cta.href = P.checkoutUrl;
+    cta.textContent = `Buy Pro – ${P.nowPrice()}`;
     el.querySelector('.pro-key').hidden = true;
     el.querySelector('.pro-msg').textContent = '';
     el.classList.add('open');
@@ -4059,8 +4055,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
     </ul>
     <div class="pro-price"><span data-pro-price style="font-size:inherit;font-weight:inherit;color:inherit;margin:0;letter-spacing:inherit">€5.49</span><span>one-time · no subscription</span></div>
     <p class="pro-launch">Launch price €3.99 until 30 November, then €5.49.</p>
-    <a class="pro-cta" href="#" target="_blank" rel="noopener">Notify me when Pro launches</a>
-    <p class="pro-note only-soon">Pro goes on sale soon. Leave your email and you'll hear first, in time for the launch price.</p>
+    <a class="pro-cta" href="#" target="_blank" rel="noopener">Buy Pro</a>
     <p class="pro-note only-live">Secure checkout. 14-day money-back guarantee.</p>
     <div class="pro-links">
       <button type="button" class="only-live" onclick="__cw.showProKey()">I have a license key</button>
