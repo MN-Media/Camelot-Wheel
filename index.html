@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Camelot Wheel — DJ Harmonic Mixer</title>
+  <title>Key Navigator — Harmonic mixing, extended</title>
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#0071e3">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Camelot Wheel">
-  <meta name="description" content="DJ Harmonic Mixing Tool — Camelot Wheel for key-compatible track selection">
+  <meta name="apple-mobile-web-app-title" content="Key Navigator">
+  <meta name="description" content="Key Navigator: harmonic mixing, extended. Eleven ways out of every key, sorted by energy. Works with Camelot notation.">
 
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
@@ -876,7 +876,7 @@ var CW_IDLE_DEFAULT='code';
 const CW_SITE = location.hostname.endsWith('netlify.app') ? 'https://mnmedia-website.netlify.app' : 'https://mnmedia.app';
 /* Pro-Test (24.10.2026): Testversion (test--…netlify.app) und lokal dürfen Pro per Schalter testen */
 const CW_TEST = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('test--');
-const CW_BUILD = '37';
+const CW_BUILD = '38';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -1088,7 +1088,7 @@ window.CW_PRO = {
     }[mode] || null;
     if (!T) return next();
     var lead = phone
-      ? 'Camelot Wheel works best as an app: full screen, its own icon, no browser bars. Free, no App Store, ten seconds.'
+      ? 'Key Navigator works best as an app: full screen, its own icon, no browser bars. Free, no App Store, ten seconds.'
       : 'Its own window, its own icon, no tabs in the way. Free and installed in seconds.';
 
     var g = document.createElement('div');
@@ -1098,8 +1098,8 @@ window.CW_PRO = {
     var steps = '';
     for (var i = 0; i < T.steps.length; i++) steps += '<li data-in style="--d:' + (4 + i) + '"><b>' + (i + 1) + '</b><span>' + T.steps[i] + '</span></li>';
     g.innerHTML = '<div class="g-wrap">' +
-      '<div class="g-top" data-in style="--d:0"><svg viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="12" stroke-linejoin="round"/></svg>Camelot Wheel<span>mnmedia</span></div>' +
-      '<div class="g-icon" data-in style="--d:1"><div class="g-tile"><img src="/icons/apple-touch-icon.png" alt="" width="76" height="76"></div><div class="g-tile-l">Camelot Wheel</div></div>' +
+      '<div class="g-top" data-in style="--d:0"><svg viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="12" stroke-linejoin="round"/></svg>Key Navigator<span>mnmedia</span></div>' +
+      '<div class="g-icon" data-in style="--d:1"><div class="g-tile"><img src="/icons/apple-touch-icon.png" alt="" width="76" height="76"></div><div class="g-tile-l">Key Navigator</div></div>' +
       '<h2 id="cwGateH" data-in style="--d:2">' + T.h + '</h2>' +
       '<p class="g-lead" data-in style="--d:3">' + (T.note || lead) + '</p>' +
       '<ol class="g-steps">' + steps + '</ol>' +
@@ -1127,7 +1127,7 @@ window.CW_PRO = {
 
     function done() {   // installiert: kurz bestätigen
       g.querySelector('h2').textContent = 'Installed.';
-      g.querySelector('.g-lead').textContent = phone ? 'Open Camelot Wheel from your home screen. Or keep going here.' : 'Camelot Wheel now has its own window. Or keep going here.';
+      g.querySelector('.g-lead').textContent = phone ? 'Open Key Navigator from your home screen. Or keep going here.' : 'Key Navigator now has its own window. Or keep going here.';
       var ol = g.querySelector('.g-steps'); if (ol) ol.remove();
       inst.hidden = true; cont.textContent = 'Continue here';
       try { localStorage.setItem('cw.install', 'never'); } catch (x) {}
@@ -1163,7 +1163,7 @@ window.CW_PRO = {
   }
 
   /* Startbildschirm (24.10.2026): einmal pro App-Start (Antippen überspringt, ?nosplash schaltet ab); kommt nach dem Install-Screen */
-  var CW_SPLASH_TAGLINE = 'Mix in harmony.';
+  var CW_SPLASH_TAGLINE = 'Harmonic mixing, extended.';
   function cwStartSplash() {
     var skip = window.top !== window.self || /[?&]nosplash\b/.test(location.search);   // auch Desktop, nicht im iframe
     try { if (sessionStorage.getItem('cw.splash')) skip = true; else sessionStorage.setItem('cw.splash', '1'); } catch (e) {}
@@ -1199,7 +1199,7 @@ window.CW_PRO = {
     sp.id = 'cwSplash'; sp.setAttribute('aria-hidden', 'true');
     sp.className = (ind ? 'sp-ind' : 'sp-cls') + (light ? ' sp-light' : '');
     sp.innerHTML = '<div class="sp-in"><svg class="sp-hex" viewBox="0 0 88 100"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5"/></svg>' +
-      '<div class="sp-row"><div class="sp-name">Camelot Wheel</div><span class="sp-tier ' + (pro ? 'sp-pro">Pro' : 'sp-core">Core') + '</span></div>' +
+      '<div class="sp-row"><div class="sp-name">Key Navigator</div><span class="sp-tier ' + (pro ? 'sp-pro">Pro' : 'sp-core">Core') + '</span></div>' +
       '<div class="sp-tag">' + CW_SPLASH_TAGLINE + '</div></div>';
     b.appendChild(sp);
     var gone = false, outT = null;
@@ -1360,7 +1360,7 @@ window.CW_PRO = {
 })();
 </script>
 <header>
-  <h1><svg class="brand-hex" viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/></svg>Camelot Wheel <span class="tier-tag core-tag">Core</span></h1>
+  <h1><svg class="brand-hex" viewBox="0 0 88 100" aria-hidden="true"><polygon points="44,6 81,27.5 81,72.5 44,94 7,72.5 7,27.5" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/></svg>Key Navigator <span class="tier-tag core-tag">Core</span></h1>
   <p class="subtitle">Harmonic Mixing Tool</p>
 </header>
 
@@ -1509,7 +1509,7 @@ window.CW_PRO = {
   <div class="mode-sep"></div>
 
   <!-- Info -->
-  <button class="sbar-btn" id="info-btn" title="About Camelot Wheel" onclick="document.getElementById('infoModal').classList.add('open')">
+  <button class="sbar-btn" id="info-btn" title="About Key Navigator" onclick="document.getElementById('infoModal').classList.add('open')">
     <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
       <circle cx="9" cy="9" r="7.5"/>
       <line x1="9" y1="8" x2="9" y2="13"/>
@@ -2209,8 +2209,9 @@ window.CW_PRO = {
     } else {
       ctx.fillStyle = hub.idle;
       ctx.font = ind ? `${Math.round(11*f)}px ${FONT_HUB()}` : `bold ${Math.round(9*f)}px ${FONT_HUB()}`;
-      ctx.fillText('CAMELOT', CX, CY - 7*f);
-      ctx.fillText('WHEEL',   CX, CY + 7*f);
+      ctx.fillText('KEY', CX, CY - 7*f);
+      ctx.font = ind ? `${Math.round(8*f)}px ${FONT_HUB()}` : `bold ${Math.round(6.5*f)}px ${FONT_HUB()}`;
+      ctx.fillText('NAVIGATOR', CX, CY + 7*f);
     }
     ctx.restore();
   }
@@ -3107,8 +3108,9 @@ window.CW_PRO = {
       } else {
         c2.fillStyle = hub.idle;
         c2.font = ind ? `${Math.round(11*(W2/BASE))}px ${FONT_HUB()}` : `bold ${Math.round(9*(W2/BASE))}px ${FONT_HUB()}`;
-        c2.fillText('CAMELOT', CX2, CY2 - 7*(W2/BASE));
-        c2.fillText('WHEEL',   CX2, CY2 + 7*(W2/BASE));
+        c2.fillText('KEY', CX2, CY2 - 7*(W2/BASE));
+        c2.font = ind ? `${Math.round(8*(W2/BASE))}px ${FONT_HUB()}` : `bold ${Math.round(6.5*(W2/BASE))}px ${FONT_HUB()}`;
+        c2.fillText('NAVIGATOR', CX2, CY2 + 7*(W2/BASE));
       }
       c2.restore();
     }
@@ -3314,7 +3316,7 @@ window.CW_PRO = {
         el.classList.toggle('pro-tag', pro);
         el.classList.toggle('core-tag', !pro);
       });
-      document.title = `Camelot Wheel ${pro ? 'Pro' : 'Core'} — DJ Harmonic Mixer`;
+      document.title = `Key Navigator ${pro ? 'Pro' : 'Core'} — Harmonic mixing, extended`;
     };
     setTier();
     // Info-Fenster steht im HTML erst nach diesem Skript → nach dem Laden nochmal
@@ -4044,7 +4046,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
 <div id="proSheet" role="dialog" aria-modal="true" aria-labelledby="proTitle" onclick="if(event.target===this)__cw.closeProSheet()">
   <div class="pro-card">
     <button class="info-close" onclick="__cw.closeProSheet()" title="Close" aria-label="Close">✕</button>
-    <h2 id="proTitle">Camelot Wheel <span class="pro-tag">Pro</span></h2>
+    <h2 id="proTitle">Key Navigator <span class="pro-tag">Pro</span></h2>
     <p class="pro-why">Unlock the full energy map.</p>
     <ul class="pro-list">
       <li style="--c:#ff3800">Boost and drop levels 2 and 3: the full energy map</li>
@@ -4128,12 +4130,12 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
 
     <button class="info-close" onclick="document.getElementById('infoModal').classList.remove('open')" title="Close">✕</button>
 
-    <h2>Camelot Wheel <span class="tier-tag core-tag">Core</span></h2>
+    <h2>Key Navigator <span class="tier-tag core-tag">Core</span></h2>
     <div class="info-sub">Harmonic Mixing Reference</div>
 
     <section class="info-install" id="infoInstall" aria-labelledby="infoInstallH">
       <div class="ii-head" id="infoInstallH">Use it in the browser – or install it as an app</div>
-      <p class="ii-lead">Nothing to install: Camelot Wheel runs in any current browser and keeps working offline once it has loaded. Installing only gives it its own icon and window.</p>
+      <p class="ii-lead">Nothing to install: Key Navigator runs in any current browser and keeps working offline once it has loaded. Installing only gives it its own icon and window.</p>
       <p class="ii-done" hidden>✓ Installed – you are using the app version.</p>
       <button class="ii-btn" type="button" id="infoInstallBtn" hidden>Install now</button>
       <ul class="ii-list">
@@ -4146,9 +4148,9 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
       <button class="ii-more" type="button" hidden aria-expanded="false">Other devices</button>
     </section>
 
-    <p>The standard Camelot wheel gives you three compatibility types: same key, one step adjacent, and relative major/minor. Camelot Wheel expands this to <strong>8 directional match categories</strong> (Core includes level 1 of each energy direction, <span class="pro-tag" style="font-size:inherit;letter-spacing:inherit;">Pro</span> adds levels 2 and 3) — letting you plan not just <em>which</em> keys mix, but <em>how</em> the energy of a set moves with each transition.</p>
+    <p>The standard Camelot wheel gives you three compatibility types: same key, one step adjacent, and relative major/minor. Key Navigator expands this to <strong>8 directional match categories</strong> (Core includes level 1 of each energy direction, <span class="pro-tag" style="font-size:inherit;letter-spacing:inherit;">Pro</span> adds levels 2 and 3) — letting you plan not just <em>which</em> keys mix, but <em>how</em> the energy of a set moves with each transition.</p>
 
-    <h3>The Camelot wheel, extended</h3>
+    <h3>Harmonic mixing, extended</h3>
     <p>Traditional harmonic mixing only answers "will these keys clash?" This wheel answers "where does this take the crowd?" Boost moves raise perceived energy and tension. Drop moves lower it. Each level quantifies how dramatic the shift is — so you can plan a slow burn build, a peak-time push, or a smooth comedown with precision.</p>
     <p>The result: <strong class="gold-em">eleven ways out of every key instead of three</strong>, almost four times as many as a standard wheel, each with a defined energy direction.</p>
 
@@ -4196,7 +4198,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
         <span class="info-cat-desc">Mix fast. A clear step down that signals a wind-down. <span class="info-cat-more">(→&nbsp;Down a whole tone, 5 of 7 notes shared. In brackets: down a semitone, only 2 of 7 shared.)</span> <span class="needs-pro">Requires Pro</span></span>
       </div>
     </div>
-    <p class="info-ears"><strong>Your ears decide.</strong> The categories follow music theory: they show which keys fit and what each move does harmonically. But every track brings its own energy, from groove and sound to arrangement and vocals. A harmonic boost points the way, it doesn't guarantee a great mix. Camelot Wheel doesn't replace your ears. It's your guide, and it shows you far more options than the classic wheel.</p>
+    <p class="info-ears"><strong>Your ears decide.</strong> The categories follow music theory: they show which keys fit and what each move does harmonically. But every track brings its own energy, from groove and sound to arrangement and vocals. A harmonic boost points the way, it doesn't guarantee a great mix. Key Navigator doesn't replace your ears. It's your guide, and it shows you far more options than the classic wheel.</p>
 
     <h3>How to use</h3>
     <div class="info-steps">
@@ -4279,6 +4281,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
       <span style="font-size:.7rem;color:var(--muted);opacity:.7;letter-spacing:.05em;">© <span class="cw-year"></span> <a href="https://mnmedia.app" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;opacity:.85;">mnmedia.app</a></span>
       <span style="font-size:.7rem;color:var(--muted);opacity:.7;letter-spacing:.05em;"><a href="mailto:info@mnmedia.app" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">info@mnmedia.app</a> · <a data-site-link="/impressum" href="https://mnmedia.app/impressum" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">Impressum</a> · <a data-site-link="/datenschutz" href="https://mnmedia.app/datenschutz" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">Privacy</a></span>
+      <span style="display:block;margin-top:8px;font-size:.62rem;color:var(--muted);opacity:.6;letter-spacing:.03em;line-height:1.5;">Works with Camelot notation (1A–12B). Camelot Wheel is a trademark of Mixed In Key LLC. Key Navigator is not affiliated with Mixed In Key.</span>
     </div>
 
   </div>
@@ -4653,12 +4656,12 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-heig
     const setBtn = document.createElement('button');
     setBtn.type = 'button'; setBtn.id = 'mSet'; setBtn.setAttribute('aria-label', 'Settings');
     setBtn.innerHTML = icon('#cat-btn');
-    // Name für die Querformat-Spalte (unten): Hexagon + „Camelot Wheel“ + Core/Pro
+    // Name für die Querformat-Spalte (unten): Hexagon + „Key Navigator“ + Core/Pro
     const brand = document.createElement('div');
     brand.id = 'mBrand'; brand.setAttribute('aria-hidden', 'true');
     const syncBrand = () => {
       const hex = $('header .brand-hex'), tag = $('header .tier-tag');
-      brand.innerHTML = (hex ? hex.outerHTML : '') + '<span>Camelot<br>Wheel</span>' + (tag ? tag.outerHTML : '');
+      brand.innerHTML = (hex ? hex.outerHTML : '') + '<span>Key<br>Navigator</span>' + (tag ? tag.outerHTML : '');
     };
     syncBrand();
     const placeSet = () => {

@@ -1,7 +1,7 @@
-// Camelot Wheel Pro — Service Worker
+// Key Navigator — Service Worker
 // Cache-first strategy for full offline support
 
-const CACHE_NAME = 'camelot-wheel-v37';
+const CACHE_NAME = 'key-navigator-v38';
 const ASSETS = [
   '/',
   '/index.html',

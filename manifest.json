@@ -1,14 +1,18 @@
 {
-  "name": "Camelot Wheel",
-  "short_name": "Camelot Wheel",
-  "description": "DJ Harmonic Mixing Tool — Camelot Wheel for key-compatible track selection",
+  "name": "Key Navigator",
+  "short_name": "Key Navigator",
+  "description": "Harmonic mixing, extended. Eleven ways out of every key, sorted by energy. Works with Camelot notation.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#000000",
   "theme_color": "#000000",
   "lang": "en",
-  "categories": ["music", "entertainment", "utilities"],
+  "categories": [
+    "music",
+    "entertainment",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
