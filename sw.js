@@ -1,7 +1,7 @@
 // Key Navigator — Service Worker
 // Cache-first strategy for full offline support
 
-const CACHE_NAME = 'key-navigator-v41';
+const CACHE_NAME = 'key-navigator-v42';
 const ASSETS = [
   '/',
   '/index.html',
