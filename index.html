@@ -928,7 +928,7 @@ const CW_TEST = CW_TEST_HOST && (() => {
     return !!c && cwSha256(c) === HASH;
   } catch (e) { return false; }
 })();
-const CW_BUILD = '43';
+const CW_BUILD = '44';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -2550,7 +2550,7 @@ window.CW_PRO = {
 
   function updatePanel() {
     const panel = document.getElementById('panel');
-    if (quickMode) { panelHadSel = false; renderQuickPanel(panel); return; }
+    if (quickMode) { renderQuickPanel(panel); return; }
     if (!selected) {
       panel.innerHTML = `<div class="empty-state"><div class="empty-icon">
         <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
@@ -2602,21 +2602,14 @@ window.CW_PRO = {
     animatePanel();
   }
 
-  let panelHadSel = false;
   function animatePanel() {
     const panel = document.getElementById('panel');
-    if (document.body.classList.contains('m-tab')) {
-      // iPad: Inhalt tauschen ohne Aus- und wieder Einblenden (wirkte wie Flackern); Zeilen zählen für die Größen
+    if (document.body.classList.contains('m-tab')) {   // iPad: Zeilen zählen für die Größen (Animation wie iPhone und Desktop)
       const n = [...panel.querySelectorAll('.cats-grid > .cat')].map(c => c.querySelectorAll('.sublevel:not(.sublevel-off)').length);   // Perfect, Mood, Boost, Drop
       if (n.length === 4) {
         panel.style.setProperty('--rows', Math.max(1, n[0] + n[1] + n[2] + n[3]));
         panel.style.setProperty('--rows2', Math.max(1, Math.max(n[0], n[1]) + Math.max(n[2], n[3])));
       }
-      const has = !!panel.querySelector('.cats-grid'), first = has && !panelHadSel;
-      panelHadSel = has;
-      if (has && !first) return;
-      panel.querySelectorAll('.empty-state, .cats-grid').forEach(e => { e.style.animation = 'empty-in .22s cubic-bezier(.23,1,.32,1) both'; });
-      return;
     }
     const emptyState = panel.querySelector('.empty-state');
     if (emptyState) emptyState.style.animation = 'empty-in .32s cubic-bezier(.25,.46,.45,.94) both';
@@ -2738,7 +2731,6 @@ window.CW_PRO = {
       if (!el) return;
       el.classList.remove('ql-dim','q-soft','q-soft2','q-match'); el.classList.add(cls);
       el.dataset.cat = cat || '';
-      if (document.body.classList.contains('m-tab')) return;   // iPad: nur Farbe, kein Hüpfen (wirkte wie Flackern)
       el.style.animation = 'none'; void el.offsetWidth;
       el.style.animation = `qbtn-pop .36s cubic-bezier(.34,1.56,.64,1) both`;
     }
@@ -2959,7 +2951,6 @@ window.CW_PRO = {
     if (quickMode) { qmPrevMode = mode; setQuickMode(false); return; }   // Quick beenden und direkt in die gewählte Ansicht
     if (mode === currentMode) return;
     const run = () => { applyMode(mode); draw(); updatePanel(); updateQuick(); };
-    if (document.body.classList.contains('m-tab')) { run(); return; }   // iPad: sofort wechseln wie eine App-Leiste (kein Schwarzblitz)
     focusFade(true);
     setTimeout(() => { run(); focusFade(false); }, 230);
   }
@@ -3102,7 +3093,7 @@ window.CW_PRO = {
     const btn = document.getElementById('qm-btn');
 
     btn.classList.toggle('qm-active', on);   // sofort gold (nicht erst nach der Überblendung)
-    const calm = document.body.classList.contains('m-tab');   // iPad: sofort, ohne Überblendung
+    const calm = false;   // überall gleich: aus- und einblenden (iPad wie iPhone und Desktop)
     // Focus-style transition: fade + slight zoom
     if (!calm) focusFade(true);
 
@@ -4730,11 +4721,11 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: none; min-height: 
   body.m-app.m-land.mode-no-panel:not(#m):not(#n) .quick-grid { row-gap: 14px; column-gap: 8px; }
   body.m-app.m-land.mode-no-panel:not(#m):not(#n) .qbtn { height: min(60px, calc((100dvh - 212px) / 4)); min-height: 0; }
   /* Einstellungen quer: Seitenblatt von rechts, volle Höhe */
-  body.m-app.m-land #mSheet:not([hidden]) { align-items: stretch; justify-content: flex-end; }
-  body.m-app.m-land #mSheet .ms-card { width: min(420px, 58vw); max-width: none; max-height: none; height: 100%; border-top: 0; border-left: 4px solid var(--m-act); padding-bottom: 14px; animation: ms-side .26s cubic-bezier(.25, .46, .45, .94) both; }
+  body.m-app.m-land #mSheet:not([hidden]), body.m-app.m-tl #mSheet:not([hidden]) { align-items: stretch; justify-content: flex-end; }
+  body.m-app.m-land #mSheet .ms-card, body.m-app.m-tl #mSheet .ms-card { width: min(420px, 58vw); max-width: none; max-height: none; height: 100%; border-top: 0; border-left: 4px solid var(--m-act); padding-bottom: 14px; animation: ms-side .26s cubic-bezier(.25, .46, .45, .94) both; }
   @keyframes ms-side { from { transform: translateX(28px); opacity: 0; } }
-  body.m-app.m-land:not(.look-ind) #mSheet .ms-card { border-left: 0; border-radius: 14px 0 0 14px; }
-  body.m-app.m-land:not(.look-ind) #mSheet .ms-card::before { display: none; }
+  body.m-app.m-land:not(.look-ind) #mSheet .ms-card, body.m-app.m-tl:not(.look-ind) #mSheet .ms-card { border-left: 0; border-radius: 14px 0 0 14px; }
+  body.m-app.m-land:not(.look-ind) #mSheet .ms-card::before, body.m-app.m-tl:not(.look-ind) #mSheet .ms-card::before { display: none; }
 
   /* Sparsam (24.10.2026): kein Dauer-Atmen der gewählten Taste, kein Milchglas quer (malte bei jedem Frame neu) */
   body.m-app:not(.look-ind) .qbtn.q-sel { animation: none !important; }
@@ -5191,10 +5182,8 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: none; min-height: 
       try { localStorage.setItem('cw.mview', view); } catch (err) {}
       if (!quick() && (curMode() === 'default' || curMode() === 'no-panel') && window.__cw.setModeSoft(view)) {
         const el = view === 'no-panel' ? $('#quickWrap') : panel;
-        if (!body.classList.contains('m-tab')) {   // iPad: sofort tauschen wie die Leiste (kein Einblenden aus Schwarz)
-          el.classList.remove('m-in'); void el.offsetWidth; el.classList.add('m-in');
-          el.addEventListener('animationend', () => el.classList.remove('m-in'), { once: true });   // sonst spielt die Einblendung bei jedem Wiedererscheinen erneut
-        }
+        el.classList.remove('m-in'); void el.offsetWidth; el.classList.add('m-in');   // wie iPhone: Bereich blendet weich ein
+        el.addEventListener('animationend', () => el.classList.remove('m-in'), { once: true });   // sonst spielt die Einblendung bei jedem Wiedererscheinen erneut
       } else go(view);
       sync();
     });
