@@ -923,7 +923,7 @@ const CW_TEST = CW_TEST_HOST && (() => {
     return !!c && cwSha256(c) === HASH;
   } catch (e) { return false; }
 })();
-const CW_BUILD = '39';
+const CW_BUILD = '40';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -1415,18 +1415,68 @@ window.CW_PRO = {
 })();
 </script>
 <script>
-/* Tablet hochkant (iPad, 24.10.2026): fester Bildschirm wie eine App – Rad oben, Panel darunter, nichts scrollt.
-   Quer und mit Maus/Trackpad bleibt das Desktop-Layout. Schmale Fenster (Split View ≤ 600 px) bekommen die Handy-App. */
+/* Tablet als App (iPad, seit 31.10.2026 in beiden Ausrichtungen, wie die Handy-App):
+   hochkant (t-port) Rad oben, Panel darunter; quer (t-land) Desktop-Anordnung. In beiden: fester Bildschirm, nichts federt
+   oder scrollt, kein Zoom, Drehen verdeckt (ausblenden → anordnen → einblenden), Selbstreparatur wie am iPhone.
+   Mit Maus/Trackpad bleibt das Desktop-Layout. Schmale Fenster (Split View ≤ 600 px) bekommen die Handy-App. */
 (function () {
-  var tq = matchMedia('(pointer: coarse) and (orientation: portrait) and (min-width: 601px) and (min-height: 700px)');
-  function t() {
-    var on = tq.matches && !document.body.classList.contains('m-app');
-    document.body.classList.toggle('t-port', on);
-    document.documentElement.classList.toggle('t-root', on);
+  var pq = matchMedia('(pointer: coarse) and (orientation: portrait) and (min-width: 601px) and (min-height: 700px)');
+  var lq = matchMedia('(pointer: coarse) and (orientation: landscape) and (min-width: 901px) and (min-height: 501px)');
+  var vp = document.querySelector('meta[name=viewport]'), vpBase = vp ? vp.getAttribute('content') : '', vpNow = null;
+  var b = document.body, de = document.documentElement, was = null, rotT = null, rotStart = 0;
+  var app = function () { return b.classList.contains('t-app'); };
+  function cover() {   // Umbau verdecken, danach in einem Zug einblenden (wie m-rot am iPhone)
+    var now = Date.now();
+    if (!b.classList.contains('t-rot')) { rotStart = now; b.classList.add('t-rot'); }
+    clearTimeout(rotT);
+    rotT = setTimeout(function () { b.classList.remove('t-rot'); }, Math.max(0, Math.min(420, 1200 - (now - rotStart))));
   }
-  t();
-  if (tq.addEventListener) tq.addEventListener('change', t); else if (tq.addListener) tq.addListener(t);
+  function t() {
+    var m = b.classList.contains('m-app');
+    var port = pq.matches && !m, land = lq.matches && !m, on = port || land;
+    var key = on ? (port ? 'p' : 'l') + innerWidth + 'x' + innerHeight : '';
+    b.classList.toggle('t-port', port);
+    b.classList.toggle('t-land', land);
+    b.classList.toggle('t-app', on);
+    de.classList.toggle('t-root', on);
+    var c = vpBase + (on ? ', minimum-scale=1, maximum-scale=1, user-scalable=no' : '');
+    if (vp && c !== vpNow) { vp.setAttribute('content', c); vpNow = c; }
+    if (was !== null && was !== key && (on || was)) { cover(); setTimeout(function () { dispatchEvent(new Event('resize')); }, 60); }
+    was = key;
+    heal();
+  }
+  /* Selbstreparatur: iOS lässt nach dem Drehen die Seite manchmal verschoben oder gezoomt zurück */
+  function heal() {
+    if (!app()) return;
+    var ae = document.activeElement; if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+    if (scrollX || scrollY || de.scrollTop || b.scrollTop) { scrollTo(0, 0); de.scrollTop = 0; b.scrollTop = 0; }
+  }
+  /* Kein Nachfedern: Wischen nur dort zulassen, wo wirklich etwas scrollt (Panel, Fenster) */
+  var y0 = 0;
+  document.addEventListener('touchstart', function (e) { y0 = e.touches[0] ? e.touches[0].clientY : 0; heal(); }, { passive: true, capture: true });
+  document.addEventListener('touchmove', function (e) {
+    if (!app() || e.touches.length > 1) return;
+    var dy = (e.touches[0] ? e.touches[0].clientY : 0) - y0;
+    for (var el = e.target; el && el !== b; el = el.parentElement) {
+      var cs = getComputedStyle(el);
+      if (/(auto|scroll)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1) {
+        var atTop = el.scrollTop <= 0, atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+        if ((dy > 0 && atTop) || (dy < 0 && atEnd)) break;   // am Rand: Seite würde federn → sperren
+        return;
+      }
+    }
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  var noZoom = function (e) { if (app()) e.preventDefault(); };
+  document.addEventListener('gesturestart', noZoom, { passive: false });
+  document.addEventListener('gesturechange', noZoom, { passive: false });
+  addEventListener('scroll', heal, { passive: true });
+  var recheck = function () { [120, 350, 800, 1500].forEach(function (ms) { setTimeout(t, ms); }); };
+  [pq, lq].forEach(function (q) { if (q.addEventListener) q.addEventListener('change', function () { t(); recheck(); }); else if (q.addListener) q.addListener(t); });
+  addEventListener('orientationchange', function () { if (app()) cover(); recheck(); });
   addEventListener('resize', t);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) recheck(); });
+  t();
 })();
 </script>
 <header>
@@ -1877,7 +1927,9 @@ window.CW_PRO = {
     if (mode === 'wheel-only') return Math.floor(Math.max(300, Math.min(aw, avail - 8, 900)));
     if (mode === 'no-wheel')   return BASE;
     if (mode === 'no-panel')   return Math.floor(Math.max(300, Math.min(aw, avail - (qwInside ? qw.offsetHeight + 18 : 0), 760)));
-    const panelMin = quick ? 380 : Math.max(370, Math.round(avail * 0.36));   // Panel behält Platz für alle Stufen (Legende ausgeblendet)
+    // Panel behält Platz für alle Stufen bzw. das ganze Quick-Ergebnis samt Reset (31.10.2026: 470, vorher 370/380 → schnitt ab).
+    // Gleicher Wert in beiden Fällen → das Rad bleibt beim Wechsel Matches ↔ Quick gleich groß.
+    const panelMin = Math.max(470, Math.round(avail * 0.36));
     return Math.floor(Math.max(300, Math.min(aw, avail - panelMin - 16, 680)));
   }
 
@@ -1898,9 +1950,11 @@ window.CW_PRO = {
         return Math.max(380, Math.min(640, Math.min(ch - 90, availWidth() - 340)));
       case 'wheel-only':                   // the reference view
         return Math.max(320, Math.min(830, Math.min(ch - 40, availWidth() - 110)));
-      case 'dual': {                       // two wheels + legends below (unchanged)
+      case 'dual': {                       // two wheels + legends below
         const half = Math.floor((window.innerWidth - 230) / 2);
-        return Math.max(300, Math.min(540, Math.min(half, ch - 150)));
+        const lg = document.getElementById('legendL');   // echte Legendenhöhe statt pauschal 150 (iPad quer: sonst unter der Kopfzeile)
+        const legH = lg && lg.offsetHeight ? lg.offsetHeight + 34 : 228;   // Legende beim ersten Aufruf noch unsichtbar → übliche Höhe (194 + Abstand)
+        return Math.max(260, Math.min(540, Math.min(half, ch - legH)));
       }
       default: {                           // wheel + panel, quick grid below
         // Wheel fills the full panel height; the panel keeps >= 420px width
@@ -2017,8 +2071,8 @@ window.CW_PRO = {
     const hidden = document.hidden || !canvas.getClientRects().length;
     if (needsMore || !hidden) draw();
     if (needsMore) rafId = requestAnimationFrame(rafTick);
-    else if (keepPulse && !hidden) rafId = document.body.classList.contains('m-app')
-      ? setTimeout(() => { rafId = requestAnimationFrame(rafTick); }, 45)   // Handy: ruhiger Puls ~22×/s
+    else if (keepPulse && !hidden) rafId = document.body.classList.contains('m-app') || document.body.classList.contains('t-app')
+      ? setTimeout(() => { rafId = requestAnimationFrame(rafTick); }, 45)   // Handy/Tablet: ruhiger Puls ~22×/s (Akku)
       : requestAnimationFrame(rafTick);
     else rafId = null;
   }
@@ -2337,7 +2391,13 @@ window.CW_PRO = {
   });
 
   // ── Hover handling ────────────────────────────────────────────────────
+  // Touch erzeugt nach dem Antippen eine Maus-Bewegung: die ignorieren (sonst bleibt das Segment vergrößert stehen)
+  window.__cwTouchAt = 0;
+  document.addEventListener('touchstart', () => { window.__cwTouchAt = Date.now(); }, { passive: true, capture: true });
+  document.addEventListener('touchend', () => { window.__cwTouchAt = Date.now(); }, { passive: true, capture: true });
+  const fromTouch = () => Date.now() - window.__cwTouchAt < 900;
   canvas.addEventListener('mousemove', e => {
+    if (fromTouch()) return;
     const code = hitSegment(e.clientX, e.clientY);
     if (code !== hoveredCode) {
       hoveredCode = code;
@@ -2461,7 +2521,7 @@ window.CW_PRO = {
             <circle r="3.4" fill="var(--accent)"/>
           </g>
         </svg></div>
-        <span>${!document.body.classList.contains('m-app') ? 'Click on a key<br>in the Wheel or Quick Select' : document.body.classList.contains('mode-no-wheel') ? 'Tap a key<br>in the grid' : 'Tap a key<br>on the wheel'}</span></div>${buildLegendHTML()}`;
+        <span>${document.body.classList.contains('t-app') ? (document.body.classList.contains('mode-no-wheel') ? 'Tap a key<br>in the grid' : 'Tap a key<br>on the wheel or in the grid') : !document.body.classList.contains('m-app') ? 'Click on a key<br>in the Wheel or Quick Select' : document.body.classList.contains('mode-no-wheel') ? 'Tap a key<br>in the grid' : 'Tap a key<br>on the wheel'}</span></div>${buildLegendHTML()}`;
     } else {
       const pOff=disabledCats.has('perfect'),mOff=disabledCats.has('mood');
       const b1Off=disabledCats.has('boostLv1'),b2Off=disabledCats.has('boostLv2'),b3Off=disabledCats.has('boostLv3');
@@ -2824,14 +2884,15 @@ window.CW_PRO = {
   function focusFade(out) {
     [layoutDiv, quickWrap].forEach(el => {
       el.style.transition = 'opacity .22s ease, transform .22s ease';
-      el.style.transform  = document.body.classList.contains('m-app') ? '' : (out ? 'scale(.965)' : 'scale(1)');   // Handy: nur überblenden
+      el.style.transform  = document.body.classList.contains('m-app') || document.body.classList.contains('t-app') ? '' : (out ? 'scale(.965)' : 'scale(1)');   // Handy/Tablet: nur überblenden
       el.style.opacity    = out ? '0' : '1';
     });
   }
 
   function setMode(mode) {
     if (mode === 'dual' && !isPro()) { openProSheet('dual'); return; }
-    if (mode === currentMode || quickMode) return;
+    if (quickMode) { qmPrevMode = mode; setQuickMode(false); return; }   // Quick beenden und direkt in die gewählte Ansicht
+    if (mode === currentMode) return;
     focusFade(true);
     setTimeout(() => {
       applyMode(mode);
@@ -3093,7 +3154,7 @@ window.CW_PRO = {
       const hid = document.hidden || !cv.getClientRects().length;
       if (more || !hid) draw2();
       if (more) raf = requestAnimationFrame(tick);
-      else if (sel && !hid) raf = document.body.classList.contains('m-app')
+      else if (sel && !hid) raf = document.body.classList.contains('m-app') || document.body.classList.contains('t-app')
         ? setTimeout(() => { raf = requestAnimationFrame(tick); }, 45)
         : requestAnimationFrame(tick);
       else raf = null;
@@ -3226,6 +3287,7 @@ window.CW_PRO = {
       targets(); kick(); draw2();
     });
     cv.addEventListener('mousemove', e => {
+      if (Date.now() - (window.__cwTouchAt || 0) < 900) return;   // Touch: kein Hover
       const code = hit(e.clientX, e.clientY);
       if (code !== hov) { hov = code; cv.style.cursor = code ? 'pointer' : 'default'; targets(); kick(); }
       // Mixing tips on hover (uses this wheel's own category set)
@@ -4099,6 +4161,11 @@ window.CW_PRO = {
   @media (prefers-reduced-motion: reduce) {
     body.look-ind:not(#_) .chip:hover, body.look-ind:not(#_) .qbtn:hover { transform: none !important; }
   }
+  /* Touch (iPad, iPhone): Antippen darf nichts anheben – Hover-Zustand bleibt auf Touch sonst hängen */
+  @media (hover: none) {
+    body.look-ind:not(#_) .chip:hover, body.look-ind:not(#_) .qbtn:hover { transform: none !important; }
+    body.look-ind:not(#_) .chip:active, body.look-ind:not(#_) .qbtn:active { transform: scale(.96) !important; }
+  }
 
   /* Grundzustand „code": Farbkante oben an jeder Taste (B kräftig, A heller) */
   body.look-ind[data-idle="code"]:not(#_) .qbtn { position: relative; }
@@ -4114,6 +4181,20 @@ window.CW_PRO = {
 
 /* ══ Tablet hochkant (iPad, 24.10.2026): fester Bildschirm, Inhalt passt ohne Seiten-Scrollen ══ */
 html.t-root { height: 100%; overflow: hidden; overscroll-behavior: none; }
+/* Tablet als App (31.10.2026): Seite fixiert (kein Nachfedern in Safari), Antippen ohne Verzögerung/Markierung */
+html.t-root body.t-app:not(#_):not(#t) { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+body.t-app:not(#_):not(#t) input, body.t-app:not(#_):not(#t) textarea { -webkit-user-select: text; user-select: text; }
+body.t-app > header, body.t-app .controls-row, body.t-app .layout, body.t-app .quick-wrap, body.t-app > footer { transition: opacity .26s ease; }
+body.t-app.t-rot > header, body.t-app.t-rot .controls-row, body.t-app.t-rot .layout, body.t-app.t-rot .quick-wrap, body.t-app.t-rot > footer { opacity: 0 !important; transition: none !important; }
+/* Querformat: weniger Leerraum oben/unten, damit Quick Check samt Ergebnis und Reset ganz hineinpasst */
+body.t-land:not(.mode-dual):not(#_):not(#t) .layout { padding-top: 10px; padding-bottom: 10px; }
+body.t-land.mode-no-wheel:not(#_):not(#t) .layout { padding-top: 16px; }
+body.t-land:not(#_):not(#t) footer { padding: 4px 0 2px; }
+body.t-land:not(#_):not(#t) .panel { padding-top: 16px; padding-bottom: 14px; }
+/* Querformat mit wenig Höhe (iPad mini/Air mit Safari-Leisten): Legende im Panel aus – Kategorien bleiben über den Schalter oben erreichbar */
+@media (max-height: 800px) { body.t-land:not(.mode-no-panel):not(.mode-wheel-only):not(.mode-dual):not(.quick-mode):not(#_):not(#t) .panel .legend { display: none; } }
+/* Grid hochkant: Bereich und Tasten behalten ihre Höhe, wenn ein Key gewählt wird (vorher sprang alles) */
+body.t-port.mode-no-wheel:not(#_):not(#t) .panel { flex: 1 1 0; }
 body.t-port:not(#_):not(#t) { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; padding: 14px 20px 10px; gap: 12px; }
 body.t-port:not(#_):not(#t) .layout { flex: 1 1 auto; min-height: 0; width: 100%; max-width: 980px; margin: 0 auto; flex-direction: column; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 16px; padding: 0; }
 body.t-port:not(#_):not(#t) .panel { flex: 1 1 auto; min-height: 0; height: auto; width: 100%; min-width: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -4131,7 +4212,7 @@ body.t-port.mode-no-panel:not(#_):not(#t) .layout { justify-content: center; }
 body.t-port.mode-no-panel:not(#_):not(#t) .quick-wrap { order: 2; }
 body.t-port.mode-wheel-only:not(#_):not(#t) .layout { justify-content: center; }
 body.t-port.mode-no-wheel:not(#_):not(#t) .layout { justify-content: center; }
-body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: 1 1 auto; min-height: 0; }
+body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: none; min-height: 0; }
 
 /* ══ Tablets & Touch-Laptops (iPad quer und hochkant): Bedienflächen mindestens 44 pt ══ */
 @media (pointer: coarse) and (min-width: 601px) {
