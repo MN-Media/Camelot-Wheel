@@ -27,7 +27,10 @@
   <meta name="apple-mobile-web-app-title" content="Key Navigator">
   <meta name="description" content="Key Navigator: harmonic mixing, extended. Eleven ways out of every key, sorted by energy. Works with Camelot notation.">
 
-  <link rel="manifest" href="/manifest.json">
+  <script>/* Testversion mit Tester-Code: kein Manifest – iOS startet die Home-Bildschirm-App dann mit der aktuellen Adresse (Code + Pro) statt mit „/“ */
+  (function(){var h=location.hostname,t=h.indexOf('test--')===0||h==='localhost'||h==='127.0.0.1',c=false;
+  try{c=new URLSearchParams(location.search).has('tester')||!!localStorage.getItem('cw.tester')}catch(e){}
+  if(!(t&&c))document.write('<link rel="manifest" href="/manifest.json">');})();</script>
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -728,6 +731,8 @@
     /* Touch: Tipp als Karte unten (Finger verdeckt sonst die Stelle) */
     #cwTip.tip-touch { left: 50%; top: auto; bottom: calc(18px + env(safe-area-inset-bottom)); width: max-content; max-width: min(92vw, 380px); transform: translate(-50%, 8px); font-size: .82rem; }
     #cwTip.tip-touch.tip-visible { transform: translate(-50%, 0); }
+    #cwTip.tip-touch { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgb(28,28,32); border-color: rgba(255,255,255,.14); }
+    body.light-mode #cwTip.tip-touch { background: #fff; border-color: rgba(0,0,0,.12); }
     canvas, .qbtn, .chip { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
     /* ══════════════════════════════════════════════════
@@ -923,7 +928,7 @@ const CW_TEST = CW_TEST_HOST && (() => {
     return !!c && cwSha256(c) === HASH;
   } catch (e) { return false; }
 })();
-const CW_BUILD = '42';
+const CW_BUILD = '43';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -4900,6 +4905,8 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: none; min-height: 
   }
   body.m-app.m-tab.m-home:not(#m):not(#n):not(#o) #mSet { top: calc(50% - 6px); }
   body.m-tab #mSet svg { width: 20px; height: 20px; }
+  body.m-app.m-tab:not(.look-ind):not(#m):not(#n):not(#o) #mSet { border: 0; border-radius: 12px; background: transparent; color: var(--m-ink); text-transform: none; letter-spacing: 0; font-size: .8rem; font-weight: 600; }
+  body.m-app.m-tab:not(.look-ind):not(#m):not(#n):not(#o) #mSet:active { background: var(--m-fill); color: var(--m-ink); }
   .mset-l { display: none; }
   body.m-tab .mset-l { display: inline; }
   @media (max-width: 1000px) {   /* iPad mini/Air hochkant: Leiste kompakter, Einstellungen nur als Symbol */
@@ -5101,6 +5108,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: none; min-height: 
       <button type="button" class="ms-row" role="switch" data-s="light"><span>Light mode</span><span></span></button>
       <button type="button" class="ms-row" data-s="look"><span>Design</span><span></span></button>
       <button type="button" class="ms-row" data-s="info"><span>About, install and shortcuts</span><span>Open</span></button>
+      ${CW_TEST_HOST && !window.CW_PRO.test ? '<button type="button" class="ms-row ms-test" data-s="tester"><span>Tester code (test version)</span><span>Enter</span></button>' : ''}
       ${window.CW_PRO.test ? '<button type="button" class="ms-row ms-test" role="switch" data-s="protest"><span>Pro (test version only)</span><span></span></button>' : ''}
       <div class="ms-sub" data-sub></div>
       <div class="ms-cats"></div>
@@ -5149,6 +5157,7 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: none; min-height: 
       if (e.target === sheet || e.target.closest('.ms-close')) { closeSheet(); return; }
       const row = e.target.closest('.ms-row'); if (!row) return;
       const s = row.dataset.s;
+      if (s === 'tester') { const c = prompt('Tester code'); if (c && c.trim()) location.href = '/?tester=' + encodeURIComponent(c.trim()) + '&pro=1'; return; }
       if (s === 'kn') $('#kn-toggle').click();
       if (s === 'light') $('#theme-toggle').click();
       if (s === 'look') $('#look-btn').click();
