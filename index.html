@@ -928,7 +928,7 @@ const CW_TEST = CW_TEST_HOST && (() => {
     return !!c && cwSha256(c) === HASH;
   } catch (e) { return false; }
 })();
-const CW_BUILD = '44';
+const CW_BUILD = '45';
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -1271,7 +1271,7 @@ window.CW_PRO = {
       '#cwSplash.sp-ind .sp-core{background:#88c4ff;color:#001228}#cwSplash.sp-ind .sp-pro{background:#ffcc33;color:#1a1200}' +
       '#cwSplash.sp-cls .sp-tier{padding:0;font:600 1rem/1 -apple-system,"Helvetica Neue",Arial,sans-serif}' +
       '#cwSplash.sp-cls .sp-core{color:#2997ff}#cwSplash.sp-cls .sp-pro{color:#ffb300}' +
-      '#cwSplash .sp-tag{margin-top:14px;font:600 .78rem/1 "Work Sans",system-ui,sans-serif;letter-spacing:.34em;text-transform:uppercase;color:#a3a3a3;opacity:0;padding-left:.34em}' +
+      '#cwSplash .sp-tag{margin-top:14px;font:600 .78rem/1 "Work Sans",system-ui,sans-serif;letter-spacing:.34em;text-transform:uppercase;color:#a3a3a3;opacity:0;padding-left:.34em;white-space:nowrap}' +   /* Build 45: nie umbrechen – am Handy brach die weit gesperrte Zeile zu Beginn der Animation um, der Block sprang kurz (Zucken in der Mitte des Startbildschirms) */
       '#cwSplash.sp-cls .sp-tag{font:500 .82rem/1 -apple-system,"Helvetica Neue",Arial,sans-serif;letter-spacing:.2em;padding-left:.2em}' +
       '#cwSplash.sp-light .sp-tag{color:#777}' +
       '#cwSplash.sp-go .sp-hex{animation:sp-draw .8s cubic-bezier(.65,0,.35,1) forwards}' +
