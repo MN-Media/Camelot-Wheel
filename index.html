@@ -635,6 +635,13 @@
     }
     body.mode-no-wheel .qbtn          { flex: 1; height: auto; font-size: .88rem; border-radius: 10px; }
     body.mode-no-wheel .panel         { flex: 0 0 380px; }
+    /* Build 46 (Michael): Grid-Ansicht am Computer mit denselben Maßen wie „Keys“ – volle Breite, 40 px Luft
+       zwischen Panel und Kacheln, 8-px-Fuge zwischen den Spalten, 16 px zwischen B- und A-Reihe */
+    body.mode-no-wheel:not(.m-app):not(.t-port) .layout { max-width: min(1560px, calc(100vw - 56px)); gap: 40px; flex-wrap: nowrap; }
+    body.mode-no-wheel:not(.m-app):not(.t-port) .panel { flex: 0 0 clamp(380px, 28vw, 440px); }
+    body.mode-no-wheel:not(.m-app):not(.t-port) .quick-wrap { min-width: 0; }
+    body.mode-no-wheel:not(.m-app):not(.t-port) .quick-grid { column-gap: 8px; row-gap: 16px; }
+    body.mode-no-wheel:not(.m-app):not(.t-port) .qbtn { font-size: clamp(.88rem, .5rem + .55vw, 1.05rem); min-width: 0; }
 
     /* ── Mode: dual wheels ────────────────────────────── */
     /* wrappers are layout-transparent in every other mode */
