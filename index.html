@@ -603,6 +603,12 @@
       gap: 5px;
     }
     body.mode-no-panel .qbtn          { flex: 1; height: auto; font-size: .82rem; border-radius: 10px; }
+    /* Build 46 (Michael): am Computer nutzen die Kacheln die ganze Breite neben dem Rad – breiter, mit Fuge (8 px)
+       zwischen den Spalten und deutlichem Abstand zwischen B- und A-Reihe; Rad bleibt mittig zur Trennlinie */
+    body.mode-no-panel:not(.m-app):not(.t-port) .layout { max-width: min(1560px, calc(100vw - 56px)); gap: 40px; flex-wrap: nowrap; }
+    body.mode-no-panel:not(.m-app):not(.t-port) .quick-wrap { min-width: 0; }
+    body.mode-no-panel:not(.m-app):not(.t-port) .quick-grid { column-gap: 8px; row-gap: 16px; }
+    body.mode-no-panel:not(.m-app):not(.t-port) .qbtn { font-size: clamp(.82rem, .5rem + .55vw, 1.05rem); min-width: 0; }
 
     /* ── Mode: wheel-only ─────────────────────────────── */
     body.mode-wheel-only .panel       { display: none !important; }
@@ -645,6 +651,11 @@
       gap: 14px; flex: 0 1 auto;
     }
     body.mode-dual .wheel-col-r { display: flex; }
+    /* Build 46 (Michael): Dual-Ansicht – Regler-Knopf blendet die Einstellungen beider Räder aus/ein;
+       ohne Einstellungen nutzen die Räder die ganze Breite */
+    body.mode-dual:not(.m-app) #cat-btn { opacity: 1; pointer-events: auto; }
+    body.mode-dual.dual-legend-off .wheel-legend { display: none !important; }
+    body.mode-dual.dual-legend-off:not(.m-app):not(.t-port) .layout { max-width: min(1800px, calc(100vw - 56px)); gap: 40px; flex-wrap: nowrap; align-items: center; }
     body.mode-dual .wheel-legend {
       display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px;
       background: var(--surface); border: 1px solid var(--border);
@@ -2011,10 +2022,14 @@ window.CW_PRO = {
     const ch = contentHeight();
     switch (mode) {
       case 'no-panel':                     // wheel + quick grid beside it
-        return Math.max(380, Math.min(640, Math.min(ch - 90, availWidth() - 340)));
+        return Math.max(380, Math.min(640, Math.min(ch - 90, availWidth() - 620)));   // Build 46: Kacheln bekommen mind. ~580 px
       case 'wheel-only':                   // the reference view
         return Math.max(320, Math.min(830, Math.min(ch - 40, availWidth() - 110)));
       case 'dual': {                       // two wheels + legends below
+        if (document.body.classList.contains('dual-legend-off')) {   // Build 46: ohne Einstellungen – volle Breite und Höhe
+          const halfW = Math.floor((Math.min(1800, window.innerWidth - 56) - 40) / 2);
+          return Math.max(260, Math.min(860, halfW, ch - 40));
+        }
         const half = Math.floor((window.innerWidth - 230) / 2);
         const lg = document.getElementById('legendL');   // echte Legendenhöhe statt pauschal 150 (iPad quer: sonst unter der Kopfzeile)
         const legH = lg && lg.offsetHeight ? lg.offsetHeight + 34 : 228;   // Legende beim ersten Aufruf noch unsichtbar → übliche Höhe (194 + Abstand)
@@ -2717,6 +2732,7 @@ window.CW_PRO = {
     allBtns.forEach(el => {
       el.classList.remove('ql-dim','q-soft','q-soft2','q-match','q-sel','q-clash','q-perfect','q-boost1','q-boost2','q-boost3','q-mood','q-drop1','q-drop2','q-drop3');
       el.style.animation = '';
+      delete el.dataset.cat;   // Build 46: sonst zeigt Hover den Tipp der vorigen Auswahl, auch ohne gewählte Tonart
     });
     if (quickMode) {
       if (!qmA) return;
@@ -2828,6 +2844,7 @@ window.CW_PRO = {
 
   catBtn.addEventListener('click', e => {
     e.stopPropagation();
+    if (currentMode === 'dual') { toggleDualLegend(); return; }   // Build 46: in Dual Einstellungen aus-/einblenden
     const open = catDropdown.classList.toggle('open');
     catBtn.classList.toggle('sbar-active', open);
     if (open) buildCatDropdown();
@@ -2928,6 +2945,7 @@ window.CW_PRO = {
 
     document.body.classList.remove(`mode-${wasMode}`);
     currentMode = mode;
+    dualLegendTitle();
 
     // Reposition quick-wrap
     quickWrap.remove();
@@ -2948,6 +2966,12 @@ window.CW_PRO = {
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
+    // Build 46: Dual erst jetzt endgültig bemessen – Legenden sind sichtbar und haben ihre echte Höhe
+    // (vorher Ersatzwert → Räder beim ersten Öffnen kleiner als nach dem Ein-/Ausblenden der Einstellungen)
+    if (mode === 'dual' && !document.body.classList.contains('m-app')) {
+      const s2 = calcSizeForMode('dual');
+      if (s2 !== W) { applySize(s2); wheel2.applySize(s2); wheel2.draw(); }
+    }
   }
 
   // Focus-style view transition (fade + slight zoom) — shared by
@@ -2968,6 +2992,25 @@ window.CW_PRO = {
     focusFade(true);
     setTimeout(() => { run(); focusFade(false); }, 230);
   }
+
+  // Build 46 (Michael): Einstellungen unter den Dual-Rädern aus-/einblenden – gleiche Überblendung wie beim Ansichtswechsel
+  function dualLegendTitle() {
+    if (currentMode !== 'dual') { catBtn.title = 'Match Categories'; catBtn.removeAttribute('aria-pressed'); return; }
+    const off = document.body.classList.contains('dual-legend-off');
+    catBtn.title = off ? 'Show match settings' : 'Hide match settings (bigger wheels)';
+    catBtn.setAttribute('aria-pressed', String(!off));
+  }
+  function toggleDualLegend() {
+    focusFade(true);
+    setTimeout(() => {
+      const off = document.body.classList.toggle('dual-legend-off');
+      try { localStorage.setItem('cw.dualLegend', off ? 'off' : 'on'); } catch (e) {}
+      const s = calcSizeForMode('dual');
+      applySize(s); wheel2.applySize(s); draw(); wheel2.draw(); dualLegendTitle();
+      focusFade(false);
+    }, 230);
+  }
+  try { if (localStorage.getItem('cw.dualLegend') === 'off') document.body.classList.add('dual-legend-off'); } catch (e) {}
 
   // Handy-Feinschliff (23.10.2026): Ansicht ohne Überblendung des Rads wechseln (Matches ↔ Keys)
   function setModeSoft(mode) {
