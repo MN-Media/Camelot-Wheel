@@ -637,6 +637,14 @@
     }
     body.mode-no-wheel .qbtn          { flex: 1; height: auto; font-size: .88rem; border-radius: 10px; }
     body.mode-no-wheel .panel         { flex: 0 0 380px; }
+    /* Build 46 (Michael): Standardansicht am Computer – Quick Select unten etwas breiter (1040 → 1160 px),
+       dadurch 56 px statt 22 px zwischen Rad und Panel */
+    body:not(.mode-no-panel):not(.mode-no-wheel):not(.mode-wheel-only):not(.mode-dual):not(.m-app):not(.t-port) .layout { max-width: min(1160px, calc(100vw - 128px)); gap: 56px; }
+    body:not(.mode-no-panel):not(.mode-no-wheel):not(.mode-wheel-only):not(.mode-dual):not(.m-app):not(.t-port) .quick-wrap { max-width: min(1160px, calc(100vw - 128px)); }
+    /* Panel höchstens 540 px, bündig mit der rechten Kante des Quick Select; das Rad steht mittig im Raum links davon */
+    body:not(.mode-no-panel):not(.mode-no-wheel):not(.mode-wheel-only):not(.mode-dual):not(.m-app):not(.t-port) .layout { justify-content: space-between; }
+    body:not(.mode-no-panel):not(.mode-no-wheel):not(.mode-wheel-only):not(.mode-dual):not(.m-app):not(.t-port) .panel { flex: 0 1 540px; }
+    body:not(.mode-no-panel):not(.mode-no-wheel):not(.mode-wheel-only):not(.mode-dual):not(.m-app):not(.t-port) #wheel { margin-inline: auto; }
     /* Build 46 (Michael): Grid-Ansicht am Computer mit denselben Maßen wie „Keys“ – volle Breite, 40 px Luft
        zwischen Panel und Kacheln, 8-px-Fuge zwischen den Spalten, 16 px zwischen B- und A-Reihe */
     body.mode-no-wheel:not(.m-app):not(.t-port) .layout { max-width: min(1560px, calc(100vw - 128px)); gap: 48px; flex-wrap: nowrap; }
@@ -2047,8 +2055,8 @@ window.CW_PRO = {
       default: {                           // wheel + panel, quick grid below
         // Wheel fills the full panel height; the panel keeps >= 420px width
         // (its content is unchanged, it just loses spare whitespace)
-        const layoutW = Math.min(1040, window.innerWidth - 120);
-        return Math.max(380, Math.min(600, ch - 146, layoutW - 22 - 420));
+        const layoutW = Math.min(1160, window.innerWidth - 128);   // Build 46: breiter, 56 px Abstand Rad ↔ Panel
+        return Math.max(380, Math.min(600, ch - 146, layoutW - 56 - 420));
       }
     }
   }
@@ -3019,7 +3027,8 @@ window.CW_PRO = {
       focusFade(false);
     }, 230);
   }
-  try { if (localStorage.getItem('cw.dualLegend') === 'off') document.body.classList.add('dual-legend-off'); } catch (e) {}
+  // Standard (Michael): Dual ohne Einstellungen; nur wer sie einblendet, bekommt sie beim nächsten Mal wieder
+  try { if (localStorage.getItem('cw.dualLegend') !== 'on') document.body.classList.add('dual-legend-off'); } catch (e) { document.body.classList.add('dual-legend-off'); }
 
   // Handy-Feinschliff (23.10.2026): Ansicht ohne Überblendung des Rads wechseln (Matches ↔ Keys)
   function setModeSoft(mode) {
