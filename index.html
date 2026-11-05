@@ -928,7 +928,21 @@ const CW_TEST = CW_TEST_HOST && (() => {
     return !!c && cwSha256(c) === HASH;
   } catch (e) { return false; }
 })();
-const CW_BUILD = '45';
+const CW_BUILD = '46';
+// Statistik-Opt-out (Build 46): ?nostat=1 / ?nostat=0 oder 5× auf „Build“ in den Einstellungen am Handy. Gesendet wird ganz unten.
+(function () {
+  window.CW_STATS = {
+    off: function () { try { return localStorage.getItem('cw.nostat') === '1'; } catch (e) { return false; } },
+    set: function (v) { try { if (v) localStorage.setItem('cw.nostat', '1'); else localStorage.removeItem('cw.nostat'); } catch (e) {} },
+  };
+  try {
+    var q = new URLSearchParams(location.search).get('nostat');
+    if (q === '1' || q === '0') {
+      window.CW_STATS.set(q === '1');
+      var u = new URL(location.href); u.searchParams.delete('nostat'); history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+    }
+  } catch (e) {}
+})();
 try {
   const q = new URLSearchParams(location.search).get('pro');
   if (CW_TEST && q === '1') localStorage.setItem('cw.pro.ticket', 'dev');
@@ -5103,13 +5117,22 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: none; min-height: 
       ${window.CW_PRO.test ? '<button type="button" class="ms-row ms-test" role="switch" data-s="protest"><span>Pro (test version only)</span><span></span></button>' : ''}
       <div class="ms-sub" data-sub></div>
       <div class="ms-cats"></div>
-      <div class="ms-build">Build ${CW_BUILD}${window.CW_PRO.test ? ' · test version' : ''}</div></div>`;
+      <div class="ms-build">Build ${CW_BUILD}${window.CW_PRO.test ? ' · test version' : ''}${window.CW_STATS && window.CW_STATS.off() ? ' · not counted' : ''}</div></div>`;
     if (window.CW_PRO.test) {   // Testversion: Selbstreparatur-Zähler (antippen = Details / zurücksetzen)
       const bl = sheet.querySelector('.ms-build');
       const hs = () => { try { return JSON.parse(localStorage.getItem('cw.heal') || '{"n":0}'); } catch (e) { return { n: 0 }; } };
       const show = det => { const s = hs(); bl.textContent = 'Build ' + CW_BUILD + ' · test version · fixes ' + s.n + (det && s.last ? ' · ' + s.last : ''); };
       bl.addEventListener('click', () => { if (bl.dataset.det) { try { localStorage.removeItem('cw.heal'); } catch (e) {} delete bl.dataset.det; show(false); } else { bl.dataset.det = '1'; show(true); } });
       setBtn.addEventListener('click', () => { delete bl.dataset.det; show(false); });
+    }
+    if (!window.CW_PRO.test && window.CW_STATS) {   // 5× auf die Build-Zeile tippen: dieses Gerät nicht mitzählen (für Michael)
+      const bl = sheet.querySelector('.ms-build'); let taps = 0, tt = 0;
+      bl.addEventListener('click', () => {
+        clearTimeout(tt); tt = setTimeout(() => { taps = 0; }, 1500);
+        if (++taps < 5) return; taps = 0;
+        const off = !window.CW_STATS.off(); window.CW_STATS.set(off);
+        bl.textContent = 'Build ' + CW_BUILD + (off ? ' · not counted' : ' · counted');
+      });
     }
     body.appendChild(sheet);
     const cats = sheet.querySelector('.ms-cats'), sub = sheet.querySelector('[data-sub]');
@@ -5251,6 +5274,35 @@ body.t-port.mode-no-wheel:not(#_):not(#t) .quick-wrap { flex: none; min-height: 
     addEventListener('resize', () => setTimeout(enter, 0));
     sync(); enter();
   })();
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   Nutzungsstatistik ohne Cookies (Build 46, 05.11.2026)
+   Beim Start einmal an www.mnmedia.app/api/app: Core oder Pro, als App (Home-Bildschirm/Desktop-App) oder im Browser,
+   Build. Zusätzlich „install“, wenn der Browser die Installation meldet (Chrome, Edge, Android; iOS meldet nichts).
+   Für die Statistik wird nichts auf dem Gerät gespeichert oder ausgelesen; der Server bildet eine Tageskennung
+   (netlify/lib/stats.mjs der Website). Nicht gezählt: Testversion, lokal, eingebettet (iframe auf der Website),
+   automatisierte Browser und Geräte mit Opt-out (?nostat=1 oder 5× auf „Build“ in den Einstellungen am Handy).
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+  var URL_APP = 'https://www.mnmedia.app/api/app';
+  var host = location.hostname;
+  var live = host === 'key-navigator.mnmedia.app' || host === 'camelot-wheel-pro.netlify.app';
+  var embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+  if (!live || embedded || navigator.webdriver || (typeof CW_TEST !== 'undefined' && CW_TEST)) return;
+  function mode() { return (navigator.standalone === true || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: window-controls-overlay)').matches) ? 'app' : 'web'; }
+  function tier() { try { return window.CW_PRO && window.CW_PRO.isPro() ? 'pro' : 'core'; } catch (e) { return 'core'; } }
+  function send(e) {
+    if (window.CW_STATS.off()) return;
+    var body = JSON.stringify({ e: e, t: tier(), m: e === 'install' ? 'web' : mode(), b: typeof CW_BUILD !== 'undefined' ? CW_BUILD : '' });
+    try { if (navigator.sendBeacon && navigator.sendBeacon(URL_APP, body)) return; } catch (x) {}
+    try { fetch(URL_APP, { method: 'POST', body: body, mode: 'no-cors', keepalive: true }).catch(function () {}); } catch (x) {}
+  }
+  // Start: kurz warten, bis die Pro-Signatur geprüft ist (sonst stünde Pro kurz als Core da)
+  function start() { setTimeout(function () { send('open'); }, 2500); }
+  if (document.readyState === 'complete') start(); else addEventListener('load', start, { once: true });
+  addEventListener('appinstalled', function () { send('install'); });
+})();
 </script>
 </body>
 </html>
