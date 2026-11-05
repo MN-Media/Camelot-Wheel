@@ -605,7 +605,9 @@
     body.mode-no-panel .qbtn          { flex: 1; height: auto; font-size: .82rem; border-radius: 10px; }
     /* Build 46 (Michael): am Computer nutzen die Kacheln die ganze Breite neben dem Rad – breiter, mit Fuge (8 px)
        zwischen den Spalten und deutlichem Abstand zwischen B- und A-Reihe; Rad bleibt mittig zur Trennlinie */
-    body.mode-no-panel:not(.m-app):not(.t-port) .layout { max-width: min(1560px, calc(100vw - 56px)); gap: 40px; flex-wrap: nowrap; }
+    body.mode-no-panel:not(.m-app):not(.t-port) .layout { max-width: min(1560px, calc(100vw - 128px)); gap: 64px; flex-wrap: nowrap; }
+    body.mode-no-panel:not(.m-app):not(.t-port) .layout,
+    body.mode-no-wheel:not(.m-app):not(.t-port) .layout { padding-top: 48px !important; padding-bottom: 48px !important; }   /* Michael: mehr Rand ringsum */
     body.mode-no-panel:not(.m-app):not(.t-port) .quick-wrap { min-width: 0; }
     body.mode-no-panel:not(.m-app):not(.t-port) .quick-grid { column-gap: 8px; row-gap: 16px; }
     body.mode-no-panel:not(.m-app):not(.t-port) .qbtn { font-size: clamp(.82rem, .5rem + .55vw, 1.05rem); min-width: 0; }
@@ -637,7 +639,7 @@
     body.mode-no-wheel .panel         { flex: 0 0 380px; }
     /* Build 46 (Michael): Grid-Ansicht am Computer mit denselben Maßen wie „Keys“ – volle Breite, 40 px Luft
        zwischen Panel und Kacheln, 8-px-Fuge zwischen den Spalten, 16 px zwischen B- und A-Reihe */
-    body.mode-no-wheel:not(.m-app):not(.t-port) .layout { max-width: min(1560px, calc(100vw - 56px)); gap: 40px; flex-wrap: nowrap; }
+    body.mode-no-wheel:not(.m-app):not(.t-port) .layout { max-width: min(1560px, calc(100vw - 128px)); gap: 48px; flex-wrap: nowrap; }
     body.mode-no-wheel:not(.m-app):not(.t-port) .panel { flex: 0 0 clamp(380px, 28vw, 440px); }
     body.mode-no-wheel:not(.m-app):not(.t-port) .quick-wrap { min-width: 0; }
     body.mode-no-wheel:not(.m-app):not(.t-port) .quick-grid { column-gap: 8px; row-gap: 16px; }
@@ -2029,7 +2031,7 @@ window.CW_PRO = {
     const ch = contentHeight();
     switch (mode) {
       case 'no-panel':                     // wheel + quick grid beside it
-        return Math.max(380, Math.min(640, Math.min(ch - 90, availWidth() - 620)));   // Build 46: Kacheln bekommen mind. ~580 px
+        return Math.max(380, Math.min(640, Math.min(ch - 130, availWidth() - 720)));   // Build 46: mehr Rand + 64 px zum Grid, Kacheln mind. ~550 px
       case 'wheel-only':                   // the reference view
         return Math.max(320, Math.min(830, Math.min(ch - 40, availWidth() - 110)));
       case 'dual': {                       // two wheels + legends below
